@@ -3,9 +3,10 @@ authors = [
   {name = "seonglae", email = "sungle3737@gmail.com"},
 ]
 dependencies = [
-  "fire>=0.5.0",
-  "transformers>=4.34.0",
-  "torch==2.1.0+cu118",
+    "fire>=0.5.0",
+    "transformers>=4.34.0",
+    "torch==2.1.0+cu118",
+    "faiss-cpu>=1.7.4",
 ]
 description = "Add your description here"
 name = "resrer"
