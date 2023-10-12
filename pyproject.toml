@@ -7,6 +7,7 @@ dependencies = [
     "transformers>=4.34.0",
     "torch==2.1.0+cu118",
     "faiss-cpu>=1.7.4",
+    "chromadb>=0.4.14",
 ]
 description = "Add your description here"
 name = "resrer"
