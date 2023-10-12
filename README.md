@@ -26,7 +26,7 @@ python data/download_data.py --resource indexes.single.nq.subset.index_meta
 python data/download_data.py --resource data.wikipedia_split.psgs_w100
 ```
 
-Move index files to `data/index` and context files to `data/ctx`
+Move index files to `data/dpr/index` and context files to `data/dpr/ctx`
 
 ### 3. Check inference
 
