@@ -10,3 +10,4 @@ wheels/
 .venv
 *.dpr
 *.tsv
+*.sqlite3
