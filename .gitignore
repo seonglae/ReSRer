@@ -8,6 +8,12 @@ wheels/
 
 # venv
 .venv
+
+# dpr
 *.dpr
 *.tsv
+
+# chroma
+chroma
 *.sqlite3
+*.bin
