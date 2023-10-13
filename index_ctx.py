@@ -23,6 +23,10 @@ def faiss_to_db(target="chroma-local", dpr_ctx="psgs_w100",
   indexer.deserialize(index_path)
   print(
       f"Index documents: {indexer.index.ntotal}, Index dimension: {indexer.index.d}")
+  int_index_id_to_db_id = [int(db_id) for db_id in indexer.index_id_to_db_id]
+  index_map = {db_id: index_id for index_id,
+               db_id in enumerate(int_index_id_to_db_id)}
+  sorted_index = sorted(int_index_id_to_db_id)
 
   # DB initialization
   if target == "chroma-local":
@@ -30,36 +34,32 @@ def faiss_to_db(target="chroma-local", dpr_ctx="psgs_w100",
     collection = db.get_or_create_collection(dpr_ctx)
 
   # Get the faiss index starting point
-  index_start = int(indexer.index_id_to_db_id[0])
-  index_end = int(indexer.index_id_to_db_id[-1])
+  index_start, index_end = int(sorted_index[0]), int(sorted_index[-1])
+  print(f"Index start: {index_start}, Index end: {index_end}")
 
   with open(f"{ctx_path}/{dpr_ctx}.tsv", encoding='utf-8') as ctx_file:
-    faiss_id = 0
     start = time.time()
     for i, line in enumerate(ctx_file):
-      if faiss_id == indexer.index.ntotal:
-        break
-      if i < index_start:
-        continue
       if i > index_end:
-        continue
+        print(
+            f"End: {i} ({time.time() - start:.2f}s)")
+        break
 
       # Target passages in the index file
-      if int(indexer.index_id_to_db_id[faiss_id]) == i:
-        id = indexer.index_id_to_db_id[faiss_id]
+      if i in index_map:
+        index_id = sorted_index[i]
         row = line.strip().split("\t")
         passage = row[1].strip('"')
         if target == "chroma-local":
           embedding = [float(item)
-                       for item in indexer.index.reconstruct(faiss_id)]
-          collection.upsert(ids=[id], embeddings=[
+                       for item in indexer.index.reconstruct(index_id)]
+          collection.upsert(ids=[str(i)], embeddings=[
                             embedding], documents=[passage])
         # Save db step
         if i % save_steps == 0:
           if target == "chroma-local":
             print(
-                f"Saving {faiss_id}th passage to {chroma_path} ({time.time() - start:.2f}s)")
-        faiss_id += 1
+                f"Saving {i}th passage from {index_id} to {chroma_path} ({time.time() - start:.2f}s)")
 
 
 if __name__ == '__main__':
