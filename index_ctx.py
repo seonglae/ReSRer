@@ -6,14 +6,14 @@ import chromadb
 from resrer.retriever import DenseHNSWFlatIndexer
 
 
-def faiss_to_db(target="chroma-local", dpr_ctx="psgs_w100",
+def faiss_to_db(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
                 index_path="data/dpr/index", ctx_path="data/dpr/ctx",
                 save_steps=5000, chroma_path="data/chroma") -> str:
   """Facebook DRP faiss index file to ChromaDB or other Vector DB 
 
   Args:
       target (str, optional): _description_. Defaults to "chroma-local".
-      dpr_ctx (str, optional): _description_. Defaults to "psgs_w100".
+      ctx_name (str, optional): _description_. Defaults to "psgs_w100".
       index_path (str, optional): _description_. Defaults to "data/dpr/index".
       ctx_path (str, optional): _description_. Defaults to "data/dpr/ctx".
       save_steps (int, optional): _description_. Defaults to 5000.
@@ -31,15 +31,17 @@ def faiss_to_db(target="chroma-local", dpr_ctx="psgs_w100",
   # DB initialization
   if target == "chroma-local":
     db = chromadb.PersistentClient(chroma_path)
-    collection = db.get_or_create_collection(dpr_ctx)
+    collection = db.get_or_create_collection(ctx_name)
 
   # Get the faiss index starting point
   index_start, index_end = int(sorted_index[0]), int(sorted_index[-1])
   print(f"Index start: {index_start}, Index end: {index_end}")
 
-  with open(f"{ctx_path}/{dpr_ctx}.tsv", encoding='utf-8') as ctx_file:
+  with open(f"{ctx_path}/{ctx_name}.{ctx_ext}", encoding='utf-8') as ctx_file:
     start = time.time()
     for i, line in enumerate(ctx_file):
+      if i < index_start:
+        continue
       if i > index_end:
         print(
             f"End: {i} ({time.time() - start:.2f}s)")
@@ -54,7 +56,7 @@ def faiss_to_db(target="chroma-local", dpr_ctx="psgs_w100",
           embedding = [float(item)
                        for item in indexer.index.reconstruct(index_id)]
           collection.upsert(ids=[str(i)], embeddings=[
-                            embedding], documents=[passage])
+                            embedding], documents=[passage], metadatas={'title': row[2]})
         # Save db step
         if i % save_steps == 0:
           if target == "chroma-local":
