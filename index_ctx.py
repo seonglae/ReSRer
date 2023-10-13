@@ -52,11 +52,12 @@ def faiss_to_db(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
         index_id = sorted_index[i]
         row = line.strip().split("\t")
         passage = row[1].strip('"')
+        title = row[2].strip('"')
         if target == "chroma-local":
           embedding = [float(item)
                        for item in indexer.index.reconstruct(index_id)]
           collection.upsert(ids=[str(i)], embeddings=[
-                            embedding], documents=[passage], metadatas={'title': row[2]})
+                            embedding], documents=[passage], metadatas={'title': title})
         # Save db step
         if i % save_steps == 0:
           if target == "chroma-local":
