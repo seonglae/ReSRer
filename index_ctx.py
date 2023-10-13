@@ -49,7 +49,7 @@ def faiss_to_db(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
 
       # Target passages in the index file
       if i in index_map:
-        index_id = sorted_index[i]
+        index_id = index_map[i]
         row = line.strip().split("\t")
         passage = row[1].strip('"')
         title = row[2].strip('"')
