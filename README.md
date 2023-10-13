@@ -7,13 +7,28 @@
 ### 1. Install dependencies
 
 ```bash
+git clone https://github.com/seonglae/ReSRer
+cd ReSRer
 export export FAISS_ENABLE_GPU=ON
 rye sync
 # or
 pip insatll .
 ```
 
-### 2. Download NQ data
+
+### 2. Download Vector DB
+```bash
+git clone https://huggingface.co/datasets/seonglae/chroma_psgs_w100 data/chroma
+```
+
+### 3. QA pipeline
+```bash
+python qa_pipeline.py
+```
+
+# Index own DB
+
+### 1. Download NQ data
 
 You can find index id from the [source](https://github.com/facebookresearch/DPR/blob/main/dpr/data/download_data.py)
 
@@ -28,6 +43,7 @@ python data/download_data.py --resource data.wikipedia_split.psgs_w100
 
 Move index files to `data/dpr/index` and context files to `data/dpr/ctx`
 
-### 3. Check inference
-
-### 4. Test inference
+### 2. Migrate index data
+```bash
+python index_ctx.py
+```
