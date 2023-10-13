@@ -43,7 +43,6 @@ def read_dpr(questions: List[str], titles: List[str], texts: List[str], model_id
       texts (List[str]):
       model_id (str, optional): Defaults for NQ or "facebook/dpr-reader-multiset-base".
   """
-  print(questions, titles, texts)
   tokenizer = DPRReaderTokenizerFast.from_pretrained(model_id)
   model = DPRReader.from_pretrained(model_id)
   encoded_inputs = tokenizer(
@@ -52,7 +51,6 @@ def read_dpr(questions: List[str], titles: List[str], texts: List[str], model_id
       texts=texts,
       return_tensors="pt",
   )
-  print(encoded_inputs)
   outputs = model(**encoded_inputs)
   start_logits = outputs.start_logits.detach().numpy().tolist()[0]
   end_logits = outputs.end_logits.detach().numpy().tolist()[0]
