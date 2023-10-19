@@ -3,7 +3,9 @@ import torch
 import numpy as np
 import chromadb
 
-from dpr.models import encode_dpr_question, read_dpr, get_best_spans
+from dpr.embedding import encode_dpr_question
+from resrer.reader import ask_hf_reader
+from resrer.retriever import get_chroma_passages
 
 
 @torch.no_grad()
@@ -19,19 +21,19 @@ def qa(chroma_path="data/chroma", ctx_ext="psgs_w100", top_k=10) -> str:
     if query == "exit":
       break
 
+    # Embedding
     question_vector = encode_dpr_question(query)
     query_vector = question_vector.detach().numpy().tolist()[0]
-    top_docs = ctx_collection.query(
-        query_embeddings=[query_vector], n_results=top_k)
-    titles = [metadata['title'] for metadata in top_docs['metadatas'][0]]
-    texts = top_docs['documents'][0]
-    start_logits, end_logits, _ = read_dpr(
-        questions=query,
-        titles=titles[0],
-        texts=texts[0],
-    )
-    scores = get_best_spans(start_logits, end_logits)
-    print(scores[0])
+
+    # Retriever
+    titles, texts = get_chroma_passages(
+        ctx_collection, query_vector, top_k=top_k)
+    ctx = '\n\n'.join([f"{title}\n{text}" for title,
+                      text in zip(titles, texts)])
+
+    # Reader
+    response = ask_hf_reader(query, ctx)
+    print(response['answer'])
 
   return 'Done'
 

@@ -1,7 +1,9 @@
 from typing import List
 import torch
 
-from transformers import DPRQuestionEncoder, DPRQuestionEncoderTokenizer
+from transformers import DPRQuestionEncoder, DPRQuestionEncoderTokenizer, logging
+
+logging.set_verbosity_error()
 
 
 def encode_dpr_question(question: str, model_id="facebook/dpr-question_encoder-single-nq-base") -> torch.FloatTensor:
