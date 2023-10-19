@@ -3,7 +3,7 @@ import time
 import fire
 import chromadb
 
-from resrer.retriever import DenseHNSWFlatIndexer
+from dpr.retriever import DenseHNSWFlatIndexer
 
 
 def faiss_to_db(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
