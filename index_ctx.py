@@ -2,11 +2,14 @@ import time
 
 import fire
 import chromadb
+from datasets import load_dataset
 
 from dpr.retriever import DenseHNSWFlatIndexer
 
+def dataset(target="chroma-local", dataset_id="wikipedia", model_id="intfloat/multilingual-e5-large", prefix="query: ", subset='20220301.en'):
+  documents = load_dataset(dataset_id, subset)
 
-def faiss_to_db(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
+def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
                 index_path="data/dpr/index", ctx_path="data/dpr/ctx",
                 save_steps=5000, chroma_path="data/chroma") -> str:
   """Facebook DRP faiss index file to ChromaDB or other Vector DB 
@@ -66,4 +69,4 @@ def faiss_to_db(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
 
 
 if __name__ == '__main__':
-  fire.Fire(faiss_to_db)
+  fire.Fire()
