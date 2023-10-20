@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from torch import Tensor
 import torch.nn.functional as F
@@ -13,7 +13,7 @@ def average_pool(last_hidden_states: Tensor,
 
 
 def encode_hf(input_texts: List[str], model_id: str = 'intfloat/multilingual-e5-large',
-              prefix: str = 'intfloat/multilingual-e5-large'):
+              prefix: str = 'query: '):
   tokenizer = AutoTokenizer.from_pretrained(model_id)
   model = AutoModel.from_pretrained(model_id)
   input_texts = [prefix + input_text for input_text in input_texts]
