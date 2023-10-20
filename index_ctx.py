@@ -7,11 +7,12 @@ from datasets import load_dataset
 from dpr.retriever import DenseHNSWFlatIndexer
 
 def dataset(target="chroma-local", dataset_id="wikipedia", model_id="intfloat/multilingual-e5-large", prefix="query: ", subset='20220301.en'):
-  documents = load_dataset(dataset_id, subset)
+  dataset = load_dataset(dataset_id, subset, streaming=True)['train']
+
 
 def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
                 index_path="data/dpr/index", ctx_path="data/dpr/ctx",
-                save_steps=5000, chroma_path="data/chroma") -> str:
+                save_steps=5000, chroma_path="data/chroma", start_index: int = None) -> str:
   """Facebook DRP faiss index file to ChromaDB or other Vector DB 
 
   Args:
@@ -38,6 +39,7 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
 
   # Get the faiss index starting point
   index_start, index_end = int(sorted_index[0]), int(sorted_index[-1])
+  if start_index is not None: index_start = int(start_index)
   print(f"Index start: {index_start}, Index end: {index_end}")
 
   with open(f"{ctx_path}/{ctx_name}.{ctx_ext}", encoding='utf-8') as ctx_file:
@@ -65,7 +67,7 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
         if i % save_steps == 0:
           if target == "chroma-local":
             print(
-                f"Saving {i}th passage from {index_id} to {chroma_path} ({time.time() - start:.2f}s)")
+                f"Saving {i}th passage from db id {index_id} to {chroma_path} ({time.time() - start:.2f}s)")
 
 
 if __name__ == '__main__':
