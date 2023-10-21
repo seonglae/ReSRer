@@ -4,21 +4,23 @@ from typing import Dict
 import fire
 import chromadb
 from datasets import load_dataset
+from huggingface_hub import HfApi
 
 from resrer.embedding import encode_hf
 from dpr.retriever import DenseHNSWFlatIndexer
 
 
 def dataset(target="chroma-local", dataset_id="wikipedia",
-            model_id="thenlper/gte-small",
-            prefix="", subset='20220301.en',
-            chroma_path="data/chroma", batch_size=10, stream=False):
+            model_id="thenlper/gte-small", user="seonglae",
+            prefix="", subset='20220301.en', token=None,
+            chroma_path="data/chroma", batch_size=10):
+  # Load DB and dataset
   if target == "chroma-local":
     db = chromadb.PersistentClient(f'{chroma_path}/{dataset_id}')
     collection = db.get_or_create_collection(dataset_id)
+  dataset = load_dataset(dataset_id, subset, streaming=True)['train']
 
-  dataset = load_dataset(dataset_id, subset, streaming=stream)['train']
-
+  # Batch processing function
   def batch_encode_hf(batch_data: Dict):
     start = time.time()
     batch_zip = zip(batch_data['id'], batch_data['title'],
@@ -32,18 +34,32 @@ def dataset(target="chroma-local", dataset_id="wikipedia",
     metadatas = [{'title': row['title'], 'url': row['url']} for row in rows]
     collection.upsert(ids=batch_data['id'], embeddings=embeddings,
                       documents=batch_data['text'], metadatas=metadatas)
-    print(f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
+    print(
+        f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
     return {'embeddings': embeddings, 'query': input_texts}
 
+  # Batch processing
   batched = dataset.map(batch_encode_hf, batched=True, batch_size=batch_size)
   list(batched)
 
+  # Upload to Huggingface Hub
+  if token is not None:
+    api = HfApi(token=token)
+    api.create_repo(f'{user}/chroma-{dataset_id}',
+                    repo_type="dataset", exist_ok=True)
+    api.upload_folder(
+        folder_path=f'{chroma_path}/{dataset_id}',
+        repo_id=f"{user}/chroma-{dataset_id}",
+        repo_type="dataset",
+    )
+
 
 def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
-          index_path="data/dpr/index", ctx_path="data/dpr/ctx",
+          index_path="data/dpr/index", ctx_path="data/dpr/ctx", token=None, user="seonglae",
           save_steps=5000, chroma_path="data/chroma", start_index: int = None, end_index: int = None) -> str:
   """Facebook DRP faiss index file to ChromaDB or other Vector DB 
   """
+  # Load faiss index
   start = time.time()
   indexer = DenseHNSWFlatIndexer()
   indexer.deserialize(index_path)
@@ -67,7 +83,9 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
     index_end = int(end_index)
   print(f"Index start: {index_start}, Index end: {index_end}")
 
+  # Read the context file per line
   with open(f"{ctx_path}/{ctx_name}.{ctx_ext}", 'r', encoding='utf-8') as ctx_file:
+    start = time.time()
     for i, line in enumerate(ctx_file):
       if i < index_start:
         continue
@@ -92,6 +110,17 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
           if target == "chroma-local":
             print(
                 f"Saving {i}th passage from db id {index_id} to {chroma_path} ({time.time() - start:.2f}s)")
+
+  # Upload to Huggingface Hub
+  if token is not None:
+    api = HfApi(token=token)
+    api.create_repo(f'{user}/chroma-{ctx_name}',
+                    repo_type="dataset", exist_ok=True)
+    api.upload_folder(
+        folder_path=f'{chroma_path}/{ctx_name}',
+        repo_id=f"{user}/chroma-{ctx_name}",
+        repo_type="dataset",
+    )
 
 
 if __name__ == '__main__':
