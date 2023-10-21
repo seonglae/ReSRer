@@ -27,7 +27,7 @@ def dataset(target="chroma-local", dataset_id="wikipedia",
             for row in batch_zip]
     input_texts = [f"{row['title']}\n{row['text']}" for row in rows]
     embeddings = encode_hf(input_texts, model_id, prefix)
-    embeddings = [embedding.detach().numpy().tolist()
+    embeddings = [embedding.cpu().detach().numpy().tolist()
                   for embedding in embeddings]
     metadatas = [{'title': row['title'], 'url': row['url']} for row in rows]
     collection.upsert(ids=batch_data['id'], embeddings=embeddings,
