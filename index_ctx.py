@@ -38,10 +38,11 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
                 save_steps=5000, chroma_path="data/chroma", start_index: int = None, end_index: int = None) -> str:
   """Facebook DRP faiss index file to ChromaDB or other Vector DB 
   """
+  start = time.time()
   indexer = DenseHNSWFlatIndexer()
   indexer.deserialize(index_path)
   print(
-      f"Index documents: {indexer.index.ntotal}, Index dimension: {indexer.index.d}")
+      f"Index documents: {indexer.index.ntotal}, Index dimension: {indexer.index.d}, Load time: {time.time() - start:.2f}s")
   int_index_id_to_db_id = [int(db_id) for db_id in indexer.index_id_to_db_id]
   index_map = {db_id: index_id for index_id,
                db_id in enumerate(int_index_id_to_db_id)}
@@ -58,8 +59,7 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
   if end_index is not None: index_end = int(end_index)
   print(f"Index start: {index_start}, Index end: {index_end}")
 
-  with open(f"{ctx_path}/{ctx_name}.{ctx_ext}", encoding='utf-8') as ctx_file:
-    start = time.time()
+  with open(f"{ctx_path}/{ctx_name}.{ctx_ext}", 'r', encoding='utf-8') as ctx_file:
     for i, line in enumerate(ctx_file):
       if i < index_start:
         continue
