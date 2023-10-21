@@ -56,7 +56,7 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
 
   # DB initialization
   if target == "chroma-local":
-    db = chromadb.PersistentClient(chroma_path)
+    db = chromadb.PersistentClient(f'{chroma_path}/{ctx_name}')
     collection = db.get_or_create_collection(ctx_name)
 
   # Get the faiss index starting point

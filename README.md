@@ -14,14 +14,6 @@ rye sync
 pip insatll .
 ```
 
-For gpu faiss (used for index DPR migraion)
-
-```bash
-export FAISS_ENABLE_GPU=ON
-pip uninstall faiss
-pip install --no-binary :all: faiss-cpu
-```
-
 ### 2. Download Vector DB
 
 ```bash
