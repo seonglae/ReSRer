@@ -13,17 +13,15 @@ def average_pool(last_hidden_states: Tensor,
   return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
 
-def encode_hf(input_texts: List[str], model_id: str = 'intfloat/multilingual-e5-large',
-              prefix: str = 'query: '):
+def encode_hf(input_texts: List[str], model_id: str = 'thenlper/gte-small',
+              prefix: str = ''):
   device = "cuda:0" if torch.cuda.is_available() else "cpu"
   tokenizer = AutoTokenizer.from_pretrained(model_id)
   model = AutoModel.from_pretrained(model_id).to(device)
   input_texts = [prefix + input_text for input_text in input_texts]
   # Tokenize the input texts
   batch_dict = tokenizer(input_texts, max_length=512,
-                         padding=True, truncation=True, return_tensors='pt')
-  batch_dict['input_ids'] = batch_dict['input_ids'].to(device)
-  batch_dict['attention_mask'] = batch_dict['attention_mask'].to(device)
+                         padding=True, truncation=True, return_tensors='pt').to(device)
   outputs = model(**batch_dict)
   embeddings = average_pool(outputs.last_hidden_state,
                             batch_dict['attention_mask'])
