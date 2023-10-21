@@ -8,34 +8,40 @@ from datasets import load_dataset
 from resrer.embedding import encode_hf
 from dpr.retriever import DenseHNSWFlatIndexer
 
+
 def dataset(target="chroma-local", dataset_id="wikipedia",
             model_id="intfloat/multilingual-e5-large",
             prefix="query: ", subset='20220301.en',
-            chroma_path="data/chroma"):
+            chroma_path="data/chroma", batch_size=10):
   if target == "chroma-local":
     db = chromadb.PersistentClient(f'{chroma_path}/{dataset_id}')
     collection = db.get_or_create_collection(dataset_id)
 
   dataset = load_dataset(dataset_id, subset, streaming=True)['train']
-  
+
   def batch_encode_hf(batch_data: Dict):
-    batch_zip = zip(batch_data['id'], batch_data['title'], batch_data['url'], batch_data['text'])
-    rows = [{'id': row[0], 'title': row[1], 'url': row[2], 'text': row[3]} for row in batch_zip]
+    start = time.time()
+    batch_zip = zip(batch_data['id'], batch_data['title'],
+                    batch_data['url'], batch_data['text'])
+    rows = [{'id': row[0], 'title': row[1], 'url': row[2], 'text': row[3]}
+            for row in batch_zip]
     input_texts = [f"{row['title']}\n{row['text']}" for row in rows]
     embeddings = encode_hf(input_texts, model_id, prefix)
-    embeddings = [embedding.detach().numpy().tolist() for embedding in embeddings]
+    embeddings = [embedding.detach().numpy().tolist()
+                  for embedding in embeddings]
     metadatas = [{'title': row['title'], 'url': row['url']} for row in rows]
-    collection.upsert(ids=[batch_data['id']], embeddings=[
-                      embeddings], documents=[batch_data['text']], metadatas=metadatas)
-    
-  batched = dataset.map(batch_encode_hf, batched=True)
+    collection.upsert(ids=batch_data['id'], embeddings=embeddings,
+                      documents=batch_data['text'], metadatas=metadatas)
+    print(f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
+    return {'embeddings': embeddings, 'query': input_texts}
+
+  batched = dataset.map(batch_encode_hf, batched=True, batch_size=batch_size)
   list(batched)
 
 
-
 def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
-                index_path="data/dpr/index", ctx_path="data/dpr/ctx",
-                save_steps=5000, chroma_path="data/chroma", start_index: int = None, end_index: int = None) -> str:
+          index_path="data/dpr/index", ctx_path="data/dpr/ctx",
+          save_steps=5000, chroma_path="data/chroma", start_index: int = None, end_index: int = None) -> str:
   """Facebook DRP faiss index file to ChromaDB or other Vector DB 
   """
   indexer = DenseHNSWFlatIndexer()
@@ -54,8 +60,10 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
 
   # Get the faiss index starting point
   index_start, index_end = int(sorted_index[0]), int(sorted_index[-1])
-  if start_index is not None: index_start = int(start_index)
-  if end_index is not None: index_end = int(end_index)
+  if start_index is not None:
+    index_start = int(start_index)
+  if end_index is not None:
+    index_end = int(end_index)
   print(f"Index start: {index_start}, Index end: {index_end}")
 
   with open(f"{ctx_path}/{ctx_name}.{ctx_ext}", encoding='utf-8') as ctx_file:
