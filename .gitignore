@@ -16,6 +16,7 @@ wheels/
 # chroma
 *.sqlite3
 *.bin
+*.pickle
 
 # mypy
 .dmypy.json

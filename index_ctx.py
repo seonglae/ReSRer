@@ -10,14 +10,14 @@ from dpr.retriever import DenseHNSWFlatIndexer
 
 
 def dataset(target="chroma-local", dataset_id="wikipedia",
-            model_id="intfloat/multilingual-e5-large",
-            prefix="query: ", subset='20220301.en',
-            chroma_path="data/chroma", batch_size=10):
+            model_id="thenlper/gte-small",
+            prefix="", subset='20220301.en',
+            chroma_path="data/chroma", batch_size=10, stream=False):
   if target == "chroma-local":
     db = chromadb.PersistentClient(f'{chroma_path}/{dataset_id}')
     collection = db.get_or_create_collection(dataset_id)
 
-  dataset = load_dataset(dataset_id, subset, streaming=True)['train']
+  dataset = load_dataset(dataset_id, subset, streaming=stream)['train']
 
   def batch_encode_hf(batch_data: Dict):
     start = time.time()

@@ -1,0 +1,17 @@
+{
+  "apps": [
+    {
+      "name": "dataset",
+      "script": "/root/ReSRer/index_ctx.py",
+      "args": [
+        "dataset",
+        "--batch_size=75",
+        "--stream"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/root/ReSRer/.venv/bin/python"
+    }
+  ]
+}
