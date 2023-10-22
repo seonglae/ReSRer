@@ -3,7 +3,7 @@ from typing import Dict
 
 import fire
 import chromadb
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from huggingface_hub import HfApi
 
 from resrer.embedding import encode_hf
@@ -19,7 +19,9 @@ def dataset(target="chroma-local", dataset_id="wikipedia",
     db = chromadb.PersistentClient(f'{chroma_path}/{dataset_id}')
     collection = db.get_or_create_collection(dataset_id)
   dataset = load_dataset(dataset_id, subset, streaming=stream)['train']
-  if not stream and start_index is not None: dataset = dataset[start_index:]
+  if not stream and start_index is not None:
+    dataset = dataset[start_index:]
+    dataset = Dataset.from_dict(dataset)
 
   # Batch processing function
   def batch_encode_hf(batch_data: Dict):
