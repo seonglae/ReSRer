@@ -18,6 +18,7 @@ wheels/
 *.bin
 *.pickle
 chroma.log
+chroma.sqlite3-journal
 
 # mypy
 .dmypy.json
