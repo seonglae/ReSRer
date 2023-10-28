@@ -1,0 +1,19 @@
+{
+  "apps": [
+    {
+      "name": "chroma",
+      "script": "/root/ReSRer/.venv/bin/chroma",
+      "args": [
+        "run",
+        "--port",
+        "8000",
+        "--path",
+        "data/chroma/wikipedia"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "none"
+    }
+  ]
+}
