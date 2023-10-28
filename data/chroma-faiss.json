@@ -1,0 +1,19 @@
+{
+  "apps": [
+    {
+      "name": "chroma-faiss",
+      "script": "/root/ReSRer/.venv/bin/chroma",
+      "args": [
+        "run",
+        "--port",
+        "1234",
+        "--path",
+        "data/chroma/psgs_w100"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "none"
+    }
+  ]
+}

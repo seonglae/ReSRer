@@ -77,7 +77,8 @@ async def dataset(target="chroma-remote", dataset_id="wikipedia",
     )
 
 
-def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
+def faiss(target="chroma-remote", ctx_name="psgs_w100", ctx_ext="tsv",
+          chroma_host="localhost", chroma_port='1234',
           index_path="data/dpr/index", ctx_path="data/dpr/ctx", token=None, user="seonglae",
           save_steps=5000, chroma_path="data/chroma", start_index: int = None, end_index: int = None) -> str:
   """Facebook DRP faiss index file to ChromaDB or other Vector DB 
@@ -96,6 +97,9 @@ def faiss(target="chroma-local", ctx_name="psgs_w100", ctx_ext="tsv",
   # DB initialization
   if target == "chroma-local":
     db = chromadb.PersistentClient(f'{chroma_path}/{ctx_name}')
+    collection = db.get_or_create_collection(ctx_name)
+  if target == "chroma-remote":
+    db = chromadb.HttpClient(chroma_host,chroma_port)
     collection = db.get_or_create_collection(ctx_name)
 
   # Get the faiss index starting point
