@@ -127,15 +127,13 @@ def faiss(target="chroma-remote", ctx_name="psgs_w100", ctx_ext="tsv",
         row = line.strip().split("\t")
         passage = row[1].strip('"')
         title = row[2].strip('"')
-        if target == "chroma-local":
-          embedding = [float(item)
-                       for item in indexer.index.reconstruct(index_id)]
-          collection.upsert(ids=[str(i)], embeddings=[
-                            embedding], documents=[passage], metadatas=[{'title': title}])
+        embedding = [float(item)
+                     for item in indexer.index.reconstruct(index_id)]
+        collection.upsert(ids=[str(i)], embeddings=[
+                          embedding], documents=[passage], metadatas=[{'title': title}])
         # Save db step
         if i % save_steps == 0:
-          if target == "chroma-local":
-            print(
+          print(
                 f"Saving {i}th passage from db id {index_id} to {chroma_path} ({time.time() - start:.2f}s)")
 
   # Upload to Huggingface Hub
