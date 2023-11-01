@@ -4,7 +4,8 @@
       "name": "faiss",
       "script": "/root/ReSRer/index_ctx.py",
       "args": [
-        "faiss"
+        "faiss",
+        "--token=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"
       ],
       "wait_ready": false,
       "autorestart": false,
