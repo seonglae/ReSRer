@@ -7,9 +7,11 @@ dependencies = [
     "transformers>=4.34.0",
     "torch==2.1.0+cu118",
     "faiss-cpu>=1.7.4",
-    "chromadb>=0.4.14",
     "datasets>=2.14.5",
     "huggingface_hub>=0.17.0",
+    "pymilvus>=2.3.2",
+    "tiktoken>=0.5.1",
+    "teicli>=0.3.1",
 ]
 description = "Add your description here"
 name = "resrer"
@@ -23,9 +25,10 @@ requires = ["hatchling"]
 
 [tool.rye]
 dev-dependencies = [
-  "autopep8>=2.0.4",
-  "pip>=23.2.1",
-  "mypy>=1.6.0",
+    "autopep8>=2.0.4",
+    "pip>=23.2.1",
+    "mypy>=1.6.0",
+    "setuptools>=68.2.2",
 ]
 managed = true
 
