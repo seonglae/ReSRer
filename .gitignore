@@ -22,3 +22,4 @@ chroma.sqlite3-journal
 
 # mypy
 .dmypy.json
+.mypy_cache/
