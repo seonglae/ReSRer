@@ -9,11 +9,13 @@ from pymilvus import MilvusClient, connections, db, Index, CollectionSchema, Fie
 from datasets import load_dataset, Dataset
 from tei import TEIClient
 from huggingface_hub import HfApi
+from dotenv import dotenv_values
 
+config = dotenv_values(".env")
 
-def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=None,
+def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_PW'],
             prefix="", subset='psgs_w100.nq.exact', stream=False,
-            milvus_host="localhost", milvus_port='19530', dim=768,
+            milvus_host=config['MILVUS_HOST'], milvus_port='19530', dim=768,
             db_name="psgs_w100", collection_name='dpr_nq', tei=False,
             tei_host="localhost", tei_port='8080', tei_protocol="http",
             batch_size=100, start_index=None, end_index=None):
