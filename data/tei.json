@@ -5,7 +5,7 @@
       "script": "/root/.cargo/bin/text-embeddings-router",
       "args": [
         "--model-id",
-        "thenlper/gte-small",
+        "jinaai/jina-embeddings-v2-base-en",
         "--port",
         "8080"
       ],
