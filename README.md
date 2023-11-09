@@ -14,10 +14,11 @@ rye sync
 pip insatll .
 ```
 
-### 2. Download Vector DB
+### 2. create .env
 
 ```bash
-git clone https://huggingface.co/datasets/seonglae/chroma_psgs_w100 data/chroma
+MILVUS_PW=
+MILVUS_HOST=resrer
 ```
 
 ### 3. QA pipeline
@@ -26,25 +27,22 @@ git clone https://huggingface.co/datasets/seonglae/chroma_psgs_w100 data/chroma
 python qa_pipeline.py
 ```
 
-# Index own DB
-
-### 1. Download NQ data
-
-You can find index id from the [source](https://github.com/facebookresearch/DPR/blob/main/dpr/data/download_data.py)
+# Index to Vector DB
+`indexing.json`
+- check embedding dimension of tei
+- subset target
+- streaming or not
+- collection name
 
 ```bash
-git clone https://github.com/facebookresearch/DPR
-# install deps
-python data/download_data.py --resource indexes.single.nq.subset.index
-python data/download_data.py --resource indexes.single.nq.subset.index_meta
-# or indexes.single.nq.full
-python data/download_data.py --resource data.wikipedia_split.psgs_w100
+python indexing.py
 ```
 
-Move index files to `data/dpr/index` and context files to `data/dpr/ctx`
 
-### 2. Migrate index data
-
-```bash
-python index_ctx.py
+# TEI
+[install guide](https://texonom.com/434f6f39b88342ea9e5156bd8501d8c4)
+```
+npm i -g pm2
+model=
+pm2 start data/tei.json
 ```
