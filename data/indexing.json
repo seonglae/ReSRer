@@ -2,14 +2,14 @@
   "apps": [
     {
       "name": "dataset",
-      "script": "/root/ReSRer/index_ctx.py",
+      "script": "/home/seonglae/ReSRer/index_ctx.py",
       "args": [
         "dataset"
       ],
       "wait_ready": false,
       "autorestart": false,
       "max_restarts": 5,
-      "interpreter": "/root/ReSRer/.venv/bin/python"
+      "interpreter": "/home/seonglae/ReSRer/.venv/bin/python"
     }
   ]
 }

@@ -2,7 +2,7 @@ import time
 from typing import Dict
 
 import fire
-from pymilvus import MilvusClient, connections, db, Index, CollectionSchema, FieldSchema, DataType, Collection
+from pymilvus import MilvusClient, connections, db, Index, CollectionSchema, FieldSchema, DataType
 from datasets import load_dataset, Dataset
 from tei import TEIClient
 from dotenv import dotenv_values
@@ -25,19 +25,17 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
   client = MilvusClient(user=milvus_user, password=milvus_pw,
                         uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
   if collection_name not in client.list_collections():
-    title = FieldSchema(name="title", dtype=DataType.STRING)
-    text = FieldSchema(name="text", dtype=DataType.STRING)
+    title = FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=1024)
+    text = FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=4096)
     vec = FieldSchema(name="vec", dtype=DataType.FLOAT_VECTOR, dim=dim)
     id_field = FieldSchema(name="id", dtype=DataType.VARCHAR,
                            is_primary=True, max_length=8)
     schema = CollectionSchema(
         fields=[id_field, vec, title, text], enable_dynamic_field=True)
-    Collection(
-        schema=schema, name=collection_name, id_type='string')
-    collection = client.describe_collection(collection_name=collection_name)
-    print(collection)
-    Index(collection_name, field_name='vec', index_params={
-        'index_type': 'HNSW', 'index_param': {'M': 32, 'efConstruction': 1024}, 'ef': 8192})
+    client.create_collection_with_schema(collection_name=collection_name, schema=schema, index_params={
+        'index_type': 'HNSW', 'index_param': {'M': 32, 'efConstruction': 512}, 'ef': 8192})
+    collection_info = client.describe_collection(collection_name=collection_name)
+    print(collection_info)
 
   # Load dataset
   dataset = load_dataset(dataset_id, subset, streaming=stream)['train']
