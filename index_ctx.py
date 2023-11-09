@@ -1,24 +1,20 @@
 import time
 from typing import Dict
-import json
-import asyncio
-import aiohttp
 
 import fire
-from pymilvus import MilvusClient, connections, db, Index, CollectionSchema, FieldSchema, DataType, MilvusException
+from pymilvus import MilvusClient, connections, db, Index, CollectionSchema, FieldSchema, DataType, Collection
 from datasets import load_dataset, Dataset
 from tei import TEIClient
-from huggingface_hub import HfApi
 from dotenv import dotenv_values
 
 config = dotenv_values(".env")
 
 def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_PW'],
-            prefix="", subset='psgs_w100.nq.exact', stream=False,
+            prefix="", subset='psgs_w100.nq.exact', stream=True,
             milvus_host=config['MILVUS_HOST'], milvus_port='19530', dim=768,
             db_name="psgs_w100", collection_name='dpr_nq', tei=False,
             tei_host="localhost", tei_port='8080', tei_protocol="http",
-            batch_size=100, start_index=None, end_index=None):
+            batch_size=5000, start_index=None, end_index=None):
 
   # Load DB
   connections.connect(
@@ -36,8 +32,10 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
                            is_primary=True, max_length=8)
     schema = CollectionSchema(
         fields=[id_field, vec, title, text], enable_dynamic_field=True)
-    client.create_collection(
-        schema=schema, collection_name=collection_name, id_type='string', dimension=dim, max_length=8)
+    Collection(
+        schema=schema, name=collection_name, id_type='string')
+    collection = client.describe_collection(collection_name=collection_name)
+    print(collection)
     Index(collection_name, field_name='vec', index_params={
         'index_type': 'HNSW', 'index_param': {'M': 32, 'efConstruction': 1024}, 'ef': 8192})
 
@@ -66,15 +64,15 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
     else:
       embeddings = teiclient.embed_batch_sync(input_texts)
     for i, row in enumerate(rows):
-      row['vector'] = embeddings[i]
-    client.insert(collection_name=collection_name, records=rows)
+      row['vec'] = embeddings[i]
+    client.insert(collection_name=collection_name, data=rows)
     print(
         f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
     return {'embeddings': embeddings, 'query': input_texts}
 
   # Batch processing
   batched = dataset.map(batch_encode, batched=True, batch_size=batch_size)
-  return batched
+  list(iter(batched))
 
 
 if __name__ == '__main__':

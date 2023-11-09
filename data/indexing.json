@@ -4,8 +4,7 @@
       "name": "dataset",
       "script": "/root/ReSRer/index_ctx.py",
       "args": [
-        "dataset",
-        "--batch_size=1000"
+        "dataset"
       ],
       "wait_ready": false,
       "autorestart": false,
