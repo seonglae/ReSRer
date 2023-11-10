@@ -26,7 +26,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
                         uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
   if collection_name not in client.list_collections():
     title = FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=1024)
-    text = FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=4096)
+    text = FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=8192)
     vec = FieldSchema(name="vec", dtype=DataType.FLOAT_VECTOR, dim=dim)
     id_field = FieldSchema(name="id", dtype=DataType.VARCHAR,
                            is_primary=True, max_length=8)
