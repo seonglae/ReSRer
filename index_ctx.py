@@ -2,7 +2,7 @@ import time
 from typing import Dict
 
 import fire
-from pymilvus import MilvusClient, connections, db, Index, CollectionSchema, FieldSchema, DataType
+from pymilvus import MilvusClient, connections, db, CollectionSchema, FieldSchema, DataType
 from datasets import load_dataset, Dataset
 from tei import TEIClient
 from dotenv import dotenv_values
@@ -10,9 +10,9 @@ from dotenv import dotenv_values
 config = dotenv_values(".env")
 
 def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_PW'],
-            prefix="", subset='psgs_w100.nq.no_index.no_embeddings', stream=True,
+            prefix="", subset='psgs_w100.nq.no_index', stream=True,
             milvus_host=config['MILVUS_HOST'], milvus_port='19530', dim=768,
-            db_name="psgs_w100", collection_name='jina_nq', tei=False,
+            db_name="psgs_w100", collection_name='dpr_nq', tei=False,
             tei_host="localhost", tei_port='8080', tei_protocol="http",
             batch_size=5000, start_index=None, end_index=None):
 

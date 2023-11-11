@@ -1,20 +1,21 @@
 import fire
 import torch
-import numpy as np
-import chromadb
+from pymilvus import MilvusClient, connections
 
 from dpr.embedding import encode_dpr_question
 from resrer.reader import ask_hf_reader
-from resrer.retriever import get_chroma_passages
+from dotenv import dotenv_values
+
+config = dotenv_values(".env")
 
 
 @torch.no_grad()
-def qa(chroma_path="data/chroma", ctx_ext="psgs_w100", top_k=10) -> str:
-  vec_db = chromadb.PersistentClient(chroma_path)
-  ctx_collection = vec_db.get_collection(ctx_ext)
-
-  print(
-      f"Index documents: {ctx_collection.count()}, Index dimension: {len(ctx_collection.peek()['embeddings'][0])}")
+def qa(top_k=10, milvus_port='19530', milvus_user='root', milvus_host=config['MILVUS_HOST'],
+       milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100") -> str:
+  connections.connect(
+      host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
+  client = MilvusClient(user=milvus_user, password=milvus_pw,
+                        uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
 
   while True:
     query = input("\nQuestion: ")
@@ -26,10 +27,11 @@ def qa(chroma_path="data/chroma", ctx_ext="psgs_w100", top_k=10) -> str:
     query_vector = question_vector.detach().numpy().tolist()[0]
 
     # Retriever
-    titles, texts = get_chroma_passages(
-        ctx_collection, query_vector, top_k=top_k)
-    ctx = '\n\n'.join([f"{title}\n{text}" for title,
-                      text in zip(titles, texts)])
+    results = client.search(collection_name=collection_name, data=[
+        query_vector], limit=top_k, output_fields=['title', 'text'])
+    texts = [result['entity']['text'] for result in results[0]]
+    ctx = '\n'.join(texts)
+    print(ctx)
 
     # Reader
     response = ask_hf_reader(query, ctx)
