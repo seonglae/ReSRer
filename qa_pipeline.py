@@ -10,7 +10,7 @@ config = dotenv_values(".env")
 
 
 @torch.no_grad()
-def qa(top_k=10, milvus_port='19530', milvus_user='root', milvus_host=config['MILVUS_HOST'],
+def qa(top_k=10, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
        milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100") -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
