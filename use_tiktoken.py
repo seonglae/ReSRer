@@ -1,12 +1,54 @@
 from typing import Dict
 import time
-
 import fire
-import tiktoken
 from datasets import load_dataset, Dataset
+import tiktoken
 
 
-def dataset(dataset_id="wiki_dpr",  target='gpt-4', subset='psgs_w100.nq.no_index.no_embeddings', stream=True,
+def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=True,
+          batch_size=5000, token=None, user='seonglae', split=512):
+  encoder = tiktoken.encoding_for_model(target)
+
+  # Load dataset
+  dataset = load_dataset(dataset_id, subset, streaming=stream)['train']
+  dict_list = []
+
+  # Todo - need to find space before and after split
+  def batch_encode(batch_data: Dict):
+    start = time.time()
+    batch_zip = zip(batch_data['id'], batch_data['title'],
+                    batch_data['text'], batch_data['url'])
+    print(batch_data.keys())
+    rows = [{'id': row[0], 'title': row[1], 'text': row[2], 'url': row[3]}
+            for row in batch_zip]
+    input_texts = [f"{row['title']}\n{row['text']}" for row in rows]
+    for text_tokenes in encoder.encode_batch(input_texts):
+      passages_count = int(len(text_tokenes) / split)
+      for i in range(passages_count):
+        tokens = text_tokenes[i * split:(i + 1) * split]
+        dict_list.append({'id': rows[i]['id'], 'title': rows[i]['title'], 'url': rows[i]['url'],
+                          'text': encoder.decode(tokens)})
+      tokens = text_tokenes[-split: 0]
+      dict_list.append({'id': rows[i]['id'], 'title': rows[i]['title'], 'url': rows[i]['url'],
+                        'text': encoder.decode(tokens)})
+    print(
+        f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
+    return {'query': input_texts}
+
+  # Batch processing
+  batched = dataset.map(batch_encode, batched=True, batch_size=batch_size)
+  for _ in batched:
+    continue
+
+  # Upload to HuggingFace Hub
+  if token is not None:
+    Dataset.from_list(dict_list).push_to_hub(config_name=target,
+                                             token=token, repo_id=f'{user}/{dataset_id}-{split}')
+
+  return 'done'
+
+
+def count(dataset_id="wiki_dpr",  target='gpt-4', subset='psgs_w100.nq.no_index.no_embeddings', stream=True,
             batch_size=5000, token=None, user='seonglae'):
   encoder = tiktoken.encoding_for_model(target)
 
