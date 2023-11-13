@@ -6,7 +6,7 @@ import tiktoken
 from datasets import load_dataset, Dataset
 
 
-def dataset(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=True,
+def dataset(dataset_id="wiki_dpr",  target='gpt-4', subset='psgs_w100.nq.no_index.no_embeddings', stream=True,
             batch_size=5000, token=None, user='seonglae'):
   encoder = tiktoken.encoding_for_model(target)
 
@@ -14,7 +14,10 @@ def dataset(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', strea
   dataset = load_dataset(dataset_id, subset, streaming=stream)['train']
   dict_list = []
   token_map = {
-      "~1024": 0,
+      "~128": 0,
+      "128~256": 0,
+      "256~512": 0,
+      "512~1024": 0,
       "1024~2048": 0,
       "2048~4096":  0,
       "4096~8192": 0,
@@ -25,7 +28,8 @@ def dataset(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', strea
       "128000~": 0,
   }
   char_map = {
-      "0~1024": 0,
+      "~512": 0,
+      "512~1024": 0,
       "1024~2048": 0,
       "2048~4096":  0,
       "4096~8192": 0,
@@ -48,8 +52,14 @@ def dataset(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', strea
       row['text_length'] = len(row['text'])
 
       # Token length
-      if row["token_length"] <= 1024:
-        token_map["~1024"] += 1
+      if row["token_length"] <= 128:
+        token_map["~128"] += 1
+      elif row["token_length"] <= 256:
+        token_map["128~256"] += 1
+      elif row["token_length"] <= 512:
+        token_map["256~512"] += 1
+      elif row["token_length"] <= 1024:
+        token_map["512~1024"] += 1
       elif row["token_length"] <= 2048:
         token_map["1024~2048"] += 1
       elif row["token_length"] <= 4096:
@@ -67,8 +77,10 @@ def dataset(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', strea
       else:
         token_map["128000~"] += 1
       # Text length
-      if row["text_length"] <= 1024:
-        char_map["0~1024"] += 1
+      if row["text_length"] <= 512:
+        char_map["~512"] += 1
+      elif row["text_length"] <= 1024:
+        char_map["512~1024"] += 1
       elif row["text_length"] <= 2048:
         char_map["1024~2048"] += 1
       elif row["text_length"] <= 4096:
@@ -90,11 +102,8 @@ def dataset(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', strea
 
   # Batch processing
   batched = dataset.map(batch_encode, batched=True, batch_size=batch_size)
-  # for _ in batched:
-  # continue
-  next(iter(batched))
-  next(iter(batched))
-  next(iter(batched))
+  for _ in batched:
+    continue
 
   # Upload to HuggingFace Hub
   if token is not None:
