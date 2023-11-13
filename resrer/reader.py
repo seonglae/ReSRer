@@ -9,7 +9,8 @@ class AnswerInfo(TypedDict):
   answer: str
 
 
-def ask_hf_reader(question: str, ctx: str, model_id: str = "mrm8488/longformer-base-4096-finetuned-squadv2") -> AnswerInfo:
+def ask_hf_reader(question: str, ctx: str,
+                  model_id: str = "mrm8488/longformer-base-4096-finetuned-squadv2") -> AnswerInfo:
   nlp = pipeline('question-answering', model=model_id, tokenizer=model_id)
   QA_input = {
       'question': question,
