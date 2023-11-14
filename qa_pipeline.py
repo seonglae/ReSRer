@@ -65,7 +65,7 @@ def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='nq',
   dataset = Dataset.load_dataset(dataset)
   dict_list: List[Dict] = []
 
-  def batch_encode(batch_data: Dict):
+  def batch_qa(batch_data: Dict):
     start = time.time()
     batch_zip = zip(batch_data['id'],
                     batch_data['question'], batch_data['answer'])
@@ -104,7 +104,7 @@ def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='nq',
     print(response['answer'])
 
   # Batch processing
-  batched = dataset.map(batch_encode, batched=True, batch_size=batch_size)
+  batched = dataset.map(batch_qa, batched=True, batch_size=batch_size)
   for _ in batched:
     continue
 

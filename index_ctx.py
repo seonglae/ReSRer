@@ -51,7 +51,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
   if tei:
     teiclient = TEIClient(host=tei_host, port=tei_port, protocol=tei_protocol)
 
-  def batch_encode(batch_data: Dict):
+  def batch_index(batch_data: Dict):
     start = time.time()
     batch_zip = zip(batch_data['id'], batch_data['title'], batch_data['text'])
     print(batch_data.keys())
@@ -70,7 +70,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
     return {'embeddings': embeddings, 'query': input_texts}
 
   # Batch processing
-  batched = dataset.map(batch_encode, batched=True, batch_size=batch_size)
+  batched = dataset.map(batch_index, batched=True, batch_size=batch_size)
   for _ in batched: continue
 
 

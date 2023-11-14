@@ -13,8 +13,7 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
   dataset = load_dataset(dataset_id, subset, streaming=stream)['train']
   dict_list = []
 
-  # Todo - need to find space before and after split
-  def batch_encode(batch_data: Dict):
+  def batch_split(batch_data: Dict):
     start = time.time()
     batch_zip = zip(batch_data['id'], batch_data['title'],
                     batch_data['text'], batch_data['url'])
@@ -24,20 +23,44 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
     input_texts = [f"{row['title']}\n{row['text']}" for row in rows]
     for i, text_tokenes in enumerate(encoder.encode_batch(input_texts)):
       row = rows[i]
-      passages_count = int(len(text_tokenes) / split)
+      passages_count = int((len(text_tokenes) - 1) / split)
+
+      # Append passagees per split
+      # `.` split logic? (floating number)
       for i in range(passages_count):
         tokens = text_tokenes[i * split:(i + 1) * split]
-        dict_list.append({'id': row['id'], 'title': row['title'], 'url': row['url'],
+        for token in text_tokenes[(i + 1) * split:]:
+          if not encoder.decode_single_token_bytes(token).startswith(b' '):
+            tokens.append(token)
+          else:
+            break
+        if not encoder.decode_single_token_bytes(text_tokenes[i * split]).startswith(b' '):
+          for token in reversed(text_tokenes[:i * split]):
+            if not encoder.decode_single_token_bytes(token).startswith(b' '):
+              tokens.insert(0, token)
+            else:
+              tokens.insert(0, token)
+              break
+        dict_list.append({'id': f"{row['id']}_{i}", 'title': row['title'], 'url': row['url'],
                           'text': encoder.decode(tokens)})
+
+      # Last passage from end
       tokens = text_tokenes[-split: 0]
-      dict_list.append({'id': row['id'], 'title': row['title'], 'url': row['url'],
+      if not encoder.decode_single_token_bytes(text_tokenes[0]).startswith(b' '):
+        for token in reversed(text_tokenes[:-split]):
+          if not encoder.decode_single_token_bytes(token).startswith(b' '):
+            tokens.insert(0, token)
+          else:
+            tokens.insert(0, token)
+            break
+      dict_list.append({'id': f"{row['id']}_{passages_count}", 'title': row['title'], 'url': row['url'],
                         'text': encoder.decode(tokens)})
     print(
         f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
     return {'query': input_texts}
 
   # Batch processing
-  batched = dataset.map(batch_encode, batched=True, batch_size=batch_size)
+  batched = dataset.map(batch_split, batched=True, batch_size=batch_size)
   for _ in batched:
     continue
 
@@ -82,7 +105,7 @@ def count(dataset_id="wiki_dpr",  target='gpt-4', subset='psgs_w100.nq.no_index.
       "65536~": 0,
   }
 
-  def batch_encode(batch_data: Dict):
+  def batch_count(batch_data: Dict):
     start = time.time()
     batch_zip = zip(batch_data['id'], batch_data['title'], batch_data['text'])
     print(batch_data.keys())
@@ -144,7 +167,7 @@ def count(dataset_id="wiki_dpr",  target='gpt-4', subset='psgs_w100.nq.no_index.
     return {'query': input_texts}
 
   # Batch processing
-  batched = dataset.map(batch_encode, batched=True, batch_size=batch_size)
+  batched = dataset.map(batch_count, batched=True, batch_size=batch_size)
   for _ in batched:
     continue
 
