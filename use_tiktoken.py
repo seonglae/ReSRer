@@ -45,7 +45,7 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
                           'text': encoder.decode(tokens)})
 
       # Last passage from end
-      tokens = text_tokenes[-split: 0]
+      tokens = text_tokenes[-split:]
       if not encoder.decode_single_token_bytes(text_tokenes[0]).startswith(b' '):
         for token in reversed(text_tokenes[:-split]):
           if not encoder.decode_single_token_bytes(token).startswith(b' '):
