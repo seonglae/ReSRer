@@ -1,0 +1,18 @@
+{
+  "apps": [
+    {
+      "name": "tei",
+      "script": "/root/.cargo/bin/text-embeddings-router",
+      "args": [
+        "--model-id",
+        "jinaai/jina-embeddings-v2-base-en",
+        "--port",
+        "8080"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "none"
+    }
+  ]
+}

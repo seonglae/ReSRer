@@ -1,0 +1,16 @@
+{
+  "apps": [
+    {
+      "name": "split",
+      "script": "/root/ReSRer/use_tiktoken.py",
+      "args": [
+        "split",
+        "--token"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    }
+  ]
+}
