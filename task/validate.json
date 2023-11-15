@@ -1,0 +1,29 @@
+{
+  "apps": [
+    {
+      "name": "validate-raw",
+      "script": "/root/ReSRer/qa_pipeline.py",
+      "args": [
+        "dataset",
+        "--token"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    },
+    {
+      "name": "validate-summarized",
+      "script": "/root/ReSRer/qa_pipeline.py",
+      "args": [
+        "dataset",
+        "--summarize",
+        "--token"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    }
+  ]
+}

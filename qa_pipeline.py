@@ -5,7 +5,7 @@ import fire
 import torch
 from pymilvus import MilvusClient, connections
 from dotenv import dotenv_values
-from datasets import Dataset
+from datasets import load_dataset, Dataset
 
 from dpr.embedding import encode_dpr_question
 from resrer.reader import ask_hf_reader
@@ -49,33 +49,33 @@ def chat(top_k=10, milvus_port='19530', milvus_user='resrer', milvus_host=config
   return 'Done'
 
 
-if __name__ == '__main__':
-  fire.Fire()
-
-
 @torch.no_grad()
-def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='nq',
+def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='nq_open',
+            encoder='dpr', split='validation', summarizer='pszemraj/pegasus-x-large-book-summary',
+            reader="mrm8488/longformer-base-4096-finetuned-squadv2",
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
-            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=1000, user='seonglae') -> str:
+            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=2, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
                         uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
 
-  dataset = Dataset.load_dataset(dataset)
+  qa_dataset = load_dataset(dataset, split=split, streaming=True)
   dict_list: List[Dict] = []
 
   def batch_qa(batch_data: Dict):
     start = time.time()
-    batch_zip = zip(batch_data['id'],
-                    batch_data['question'], batch_data['answer'])
+    batch_zip = zip(batch_data['question'], batch_data['answer'])
 
     for row in batch_zip:
-      query = row[1]
-      answer = row[2]
+      query = row[0]
+      answer = row[1]
 
       # Embedding
-      question_vector = encode_dpr_question(query)
+      if encoder == 'dpr':
+        question_vector = encode_dpr_question(query)
+      # elif encoder == 'tgi':
+      #   question_vector = encode_dpr_question(query)
       query_vector = question_vector.detach().numpy().tolist()[0]
 
       # Retriever
@@ -84,34 +84,39 @@ def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='nq',
       texts = [result['entity']['text'] for result in results[0]]
       ctx = '\n'.join(texts)
 
+      summary = None
       if summarize:
-        ctx = summarize_text(ctx)
+        summary = summarize_text(ctx)
 
       # Reader
-      response = ask_hf_reader(query, ctx)
+      response = ask_hf_reader(query, str(summary if summarize else ctx))
       dict_list.append({
-          'id': row[0],
           'question': query,
           'answer': answer,
-          'ctx': ctx,
           'retrieved': ctx,
+          'summary': summary,
           'predicted': response['answer'],
           'score': response['score'],
       })
 
     print(
-        f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
+        f"Batched {len(batch_data['question'])}rows takes ({time.time() - start:.2f}s)")
     print(response['answer'])
+    return batch_data
 
   # Batch processing
-  batched = dataset.map(batch_qa, batched=True, batch_size=batch_size)
-  for _ in batched:
-    continue
+  batched = qa_dataset.map(batch_qa, batched=True, batch_size=batch_size)
+  # for _ in batched:
+  #   continue
+  next(iter(batched))
+  next(iter(batched))
 
   # Upload to HuggingFace Hub
   if token is not None:
+    subset = 'summarized' if summarize else 'raw'
     Dataset.from_list(dict_list).push_to_hub(
-        token=token, repo_id=f'{user}/resrer-{db_name}-{collection_name}')
+        token=token, repo_id=f'{user}/{dataset}-{split}',
+        config_name=f"{db_name}-{collection_name}-{summarizer.split('/')[1]}-{reader.split('/')[1]}.{subset}")
 
   return 'Done'
 

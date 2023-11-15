@@ -9,6 +9,7 @@ from dotenv import dotenv_values
 
 config = dotenv_values(".env")
 
+
 def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_PW'],
             prefix="", subset='psgs_w100.nq.no_index.no_embeddings', stream=True,
             milvus_host=config['MILVUS_HOST'], milvus_port='19530', dim=768,
@@ -33,9 +34,11 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
     schema = CollectionSchema(
         fields=[id_field, vec, title, text], enable_dynamic_field=True)
     index_params = {
-        'index_type': 'HNSW', 'params': {'M': 32, 'efConstruction': 512}, "metric_type":"IP"}
-    client.create_collection_with_schema(collection_name=collection_name, schema=schema, index_params=index_params)
-    collection_info = client.describe_collection(collection_name=collection_name)
+        'index_type': 'HNSW', 'params': {'M': 32, 'efConstruction': 512}, "metric_type": "IP"}
+    client.create_collection_with_schema(
+        collection_name=collection_name, schema=schema, index_params=index_params)
+    collection_info = client.describe_collection(
+        collection_name=collection_name)
     print(collection_info)
 
   # Load dataset
@@ -71,7 +74,8 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
 
   # Batch processing
   batched = dataset.map(batch_index, batched=True, batch_size=batch_size)
-  for _ in batched: continue
+  for _ in batched:
+    continue
 
 
 if __name__ == '__main__':
