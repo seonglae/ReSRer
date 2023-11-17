@@ -8,6 +8,7 @@ from dotenv import dotenv_values
 from datasets import load_dataset, Dataset
 
 from dpr.embedding import encode_dpr_question
+from resrer.eval import evaluate_dataset
 from resrer.reader import ask_hf_reader
 from resrer.summarizer import summarize_text
 
@@ -15,7 +16,18 @@ config = dotenv_values(".env")
 
 
 @torch.no_grad()
-def chat(top_k=10, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
+def evaluate():
+  raw = evaluate_dataset('seonglae/nq_open-validation',
+                         'psgs_w100-dpr_nq-pegasus-x-large-book-summary-longformer-base-4096-finetuned-squadv2.raw')
+  summarized = evaluate_dataset('seonglae/nq_open-validation',
+                                'psgs_w100-dpr_nq-pegasus-x-large-book-summary-longformer-base-4096-finetuned-squadv2.summarized')
+
+  result = f"Raw: {raw}\nSummarized: {summarized}"
+  return result
+
+
+@torch.no_grad()
+def chat(top_k=1, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
          milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100", summarize=False) -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
@@ -33,7 +45,7 @@ def chat(top_k=10, milvus_port='19530', milvus_user='resrer', milvus_host=config
 
     # Retriever
     results = client.search(collection_name=collection_name, data=[
-        query_vector], limit=top_k, output_fields=['title', 'text'])
+        query_vector], limit=top_k * 8, output_fields=['title', 'text'])
     texts = [result['entity']['text'] for result in results[0]]
     ctx = '\n'.join(texts)
 
@@ -50,11 +62,11 @@ def chat(top_k=10, milvus_port='19530', milvus_user='resrer', milvus_host=config
 
 
 @torch.no_grad()
-def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='nq_open',
+def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='squad',
             encoder='dpr', split='validation', summarizer='pszemraj/pegasus-x-large-book-summary',
-            reader="mrm8488/longformer-base-4096-finetuned-squadv2",
+            reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio=8,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
-            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=2, user='seonglae') -> str:
+            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=200, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
@@ -80,7 +92,7 @@ def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='nq_open',
 
       # Retriever
       results = client.search(collection_name=collection_name, data=[
-          query_vector], limit=top_k, output_fields=['title', 'text'])
+          query_vector], limit=top_k * ratio, output_fields=['title', 'text'])
       texts = [result['entity']['text'] for result in results[0]]
       ctx = '\n'.join(texts)
 
@@ -101,22 +113,19 @@ def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='nq_open',
 
     print(
         f"Batched {len(batch_data['question'])}rows takes ({time.time() - start:.2f}s)")
-    print(response['answer'])
     return batch_data
 
   # Batch processing
   batched = qa_dataset.map(batch_qa, batched=True, batch_size=batch_size)
-  # for _ in batched:
-  #   continue
-  next(iter(batched))
-  next(iter(batched))
+  for _ in batched:
+    continue
 
   # Upload to HuggingFace Hub
   if token is not None:
     subset = 'summarized' if summarize else 'raw'
     Dataset.from_list(dict_list).push_to_hub(
         token=token, repo_id=f'{user}/{dataset}-{split}',
-        config_name=f"{db_name}-{collection_name}-{summarizer.split('/')[1]}-{reader.split('/')[1]}.{subset}")
+        config_name=f"{db_name}-{top_k}-{collection_name}-{summarizer.split('/')[1]}-{reader.split('/')[1]}.{subset}")
 
   return 'Done'
 
