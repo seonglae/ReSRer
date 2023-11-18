@@ -93,9 +93,11 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
 
       # Retriever
       if summarize:
-        top_k = top_k * ratio
+        limit = top_k * ratio
+      else:
+        limit = top_k
       results = client.search(collection_name=collection_name, data=[
-          query_vector], limit=top_k, output_fields=['title', 'text'])
+          query_vector], limit=limit, output_fields=['title', 'text'])
       texts = [result['entity']['text'] for result in results[0]]
       ctx = '\n'.join(texts)
 
@@ -103,6 +105,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
       summary = None
       if summarize:
         summaries = []
+        random.seed(ctx)
         random.shuffle(texts)
         chunk = len(texts) // ratio
         for i in range(chunk):
