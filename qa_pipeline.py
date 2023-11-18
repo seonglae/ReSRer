@@ -67,7 +67,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
             encoder='dpr', split='validation', summarizer='pszemraj/pegasus-x-large-book-summary',
             reader="vasudevgupta/bigbird-roberta-natural-questions", ratio: int = 8,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
-            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=200, user='seonglae') -> str:
+            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=4, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
@@ -116,6 +116,8 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
 
       # Reader
       response = ask_hf_reader(query, str(summary if summary else ctx))
+
+      
       dict_list.append({
           'question': query,
           'answer': answer,
@@ -136,10 +138,13 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
 
   # Upload to HuggingFace Hub
   if token is not None:
-    subset = 'summarized' if summarize else 'raw'
+    if summarize:
+      subset = f"{db_name}.{collection_name}.{top_k}_{summarizer.split('/')[1]}_{reader.split('/')[1]}"
+    else:
+      subset = f"{db_name}.{collection_name}.{top_k}_{reader.split('/')[1]}"
     Dataset.from_list(dict_list).push_to_hub(
         token=token, repo_id=f'{user}/{dataset}-{split}',
-        config_name=f"{db_name}-{top_k}-{collection_name}-{summarizer.split('/')[1]}-{reader.split('/')[1]}.{subset}")
+        config_name=subset)
 
   return 'Done'
 
