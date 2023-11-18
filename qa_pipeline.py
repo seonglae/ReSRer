@@ -1,4 +1,5 @@
 import time
+import random
 from typing import Dict, List
 
 import fire
@@ -45,7 +46,7 @@ def chat(top_k=1, milvus_port='19530', milvus_user='resrer', milvus_host=config[
 
     # Retriever
     results = client.search(collection_name=collection_name, data=[
-        query_vector], limit=top_k * 8, output_fields=['title', 'text'])
+        query_vector], limit=top_k, output_fields=['title', 'text'])
     texts = [result['entity']['text'] for result in results[0]]
     ctx = '\n'.join(texts)
 
@@ -62,9 +63,9 @@ def chat(top_k=1, milvus_port='19530', milvus_user='resrer', milvus_host=config[
 
 
 @torch.no_grad()
-def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='squad',
+def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open',
             encoder='dpr', split='validation', summarizer='pszemraj/pegasus-x-large-book-summary',
-            reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio=8,
+            reader="vasudevgupta/bigbird-roberta-natural-questions", ratio: int = 8,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
             collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=200, user='seonglae') -> str:
   connections.connect(
@@ -91,17 +92,27 @@ def dataset(top_k=10, milvus_port='19530', summarize=False, dataset='squad',
       query_vector = question_vector.detach().numpy().tolist()[0]
 
       # Retriever
+      if summarize:
+        top_k = top_k * ratio
       results = client.search(collection_name=collection_name, data=[
-          query_vector], limit=top_k * ratio, output_fields=['title', 'text'])
+          query_vector], limit=top_k, output_fields=['title', 'text'])
       texts = [result['entity']['text'] for result in results[0]]
       ctx = '\n'.join(texts)
 
+      # Create context
       summary = None
       if summarize:
-        summary = summarize_text(ctx)
+        summaries = []
+        random.shuffle(texts)
+        chunk = len(texts) // ratio
+        for i in range(chunk):
+          summaries.append(summarize_text(
+              '\n'.join(texts[i*ratio:(i+1)*ratio])))
+        summaries.append(summarize_text('\n'.join(texts[-ratio:])))
+        summary = '\n'.join(summaries)
 
       # Reader
-      response = ask_hf_reader(query, str(summary if summarize else ctx))
+      response = ask_hf_reader(query, str(summary if summary else ctx))
       dict_list.append({
           'question': query,
           'answer': answer,
