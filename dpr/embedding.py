@@ -15,7 +15,7 @@ def encode_dpr_question(question: str, model_id="facebook/dpr-question_encoder-s
       model_id (str, optional): Default for NQ or "facebook/dpr-question_encoder-multiset-base
   """
   tokenizer = DPRQuestionEncoderTokenizer.from_pretrained(model_id)
-  model = DPRQuestionEncoder.from_pretrained(model_id)
-  input_ids = tokenizer(question, return_tensors="pt")["input_ids"]
-  embeddings: torch.FloatTensor = model(input_ids).pooler_output
+  model = DPRQuestionEncoder.from_pretrained(model_id).to('cuda')
+  batch_dict = tokenizer(question, return_tensors="pt").to('cuda')
+  embeddings: torch.FloatTensor = model(**batch_dict).pooler_output
   return embeddings
