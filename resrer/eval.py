@@ -40,6 +40,16 @@ def evaluate_dataset(id: str, subset: str, metric: str = 'squad_v2',
   return results
 
 
+def evaluate_dataset_manual(id: str, subset: str):
+  dataset = load_dataset(id, subset)
+  dataset_list = list(dataset['train'])
+  for row in dataset_list:
+    row['score'] = max([regex_match_score(row['predicted'], answer)
+                       for answer in row['answer']])
+  score = sum([row['score'] for row in dataset_list]) / len(dataset_list)
+  return score
+
+
 def normalize_answer(s):
   """Normalize answer."""
   s = unicodedata.normalize("NFD", s)
