@@ -28,7 +28,9 @@ python qa_pipeline.py
 ```
 
 # Index to Vector DB
+
 `indexing.json`
+
 - check embedding dimension of tei
 - subset target
 - streaming or not
@@ -38,9 +40,10 @@ python qa_pipeline.py
 python indexing.py
 ```
 
-
 # TEI
+
 [install guide](https://texonom.com/434f6f39b88342ea9e5156bd8501d8c4)
+
 ```
 npm i -g pm2
 model=

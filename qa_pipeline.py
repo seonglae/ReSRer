@@ -8,10 +8,10 @@ from pymilvus import MilvusClient, connections
 from dotenv import dotenv_values
 from datasets import load_dataset, Dataset
 
-from dpr.embedding import encode_dpr_question
+from dpr.embedding import encode_dpr_question, get_dpr_encoder
 from resrer.eval import evaluate_dataset
-from resrer.reader import ask_hf_reader
-from resrer.summarizer import summarize_text
+from resrer.reader import ask_reader, get_reader
+from resrer.summarizer import summarize_text, get_summarizer
 
 config = dotenv_values(".env")
 
@@ -21,51 +21,16 @@ def evaluate():
   raw = evaluate_dataset('seonglae/nq_open-validation',
                          'psgs_w100-dpr_nq-pegasus-x-large-book-summary-longformer-base-4096-finetuned-squadv2.raw')
   summarized = evaluate_dataset('seonglae/nq_open-validation',
-                                'psgs_w100-dpr_nq-pegasus-x-large-book-summary-longformer-base-4096-finetuned-squadv2.summarized')
+                                'psgs_w100-dpr_nq-pegasus-x-large-book-summary-longformer-base-4096-finetuned-squadv2.summarized', context_col='summary')
 
   result = f"Raw: {raw}\nSummarized: {summarized}"
   return result
 
 
 @torch.no_grad()
-def chat(top_k=1, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
-         milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100", summarize=False) -> str:
-  connections.connect(
-      host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
-  client = MilvusClient(user=milvus_user, password=milvus_pw,
-                        uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
-
-  while True:
-    query = input("\nQuestion: ")
-    if query == "exit":
-      break
-
-    # Embedding
-    question_vector = encode_dpr_question(query)
-    query_vector = question_vector.detach().numpy().tolist()[0]
-
-    # Retriever
-    results = client.search(collection_name=collection_name, data=[
-        query_vector], limit=top_k, output_fields=['title', 'text'])
-    texts = [result['entity']['text'] for result in results[0]]
-    ctx = '\n'.join(texts)
-
-    print(f"\nRetrieved: {ctx}")
-    if summarize:
-      ctx = summarize_text(f"{ctx}")
-      print(f"\nSummary: {ctx}")
-
-    # Reader
-    response = ask_hf_reader(query, ctx)
-    print(f"\nAnswer: {response['answer']}")
-
-  return 'Done'
-
-
-@torch.no_grad()
-def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open',
+def dataset(top_k: int = 100, milvus_port='19530', summarize=False, dataset='nq_open',
             encoder='dpr', split='validation', summarizer='pszemraj/pegasus-x-large-book-summary',
-            reader="vasudevgupta/bigbird-roberta-natural-questions", ratio: int = 8,
+            reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio: int = 8,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
             collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=4, user='seonglae') -> str:
   connections.connect(
@@ -74,57 +39,77 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
                         uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
 
   qa_dataset = load_dataset(dataset, split=split, streaming=True)
+
+  # Load models
+  if encoder == 'dpr':
+    encoder_tokenizer, encoder_model = get_dpr_encoder()
+  reader_tokenizer, reader_model = get_reader()
+  if summarize:
+    summarizer_tokenizer, summarizer_model = get_summarizer()
+  batch_start = time.time()
   dict_list: List[Dict] = []
 
+  # Batch processing function
   def batch_qa(batch_data: Dict):
+    print(f"Batch {len(dict_list)} takes ({time.time() - batch_start:.2f}s)")
     start = time.time()
     batch_zip = zip(batch_data['question'], batch_data['answer'])
+    questions = [row[0] for row in batch_zip]
+    answers = [row[1] for row in batch_zip]
 
-    for row in batch_zip:
-      query = row[0]
-      answer = row[1]
+    # Embedding
+    start = time.time()
+    if encoder == 'dpr':
+      question_vectors = encode_dpr_question(
+          encoder_tokenizer, encoder_model, questions)
+      question_vectors = question_vectors.detach().cpu().numpy().tolist()
+    print(f"{batch_size}rows encoding takes ({time.time() - start:.2f}s)")
 
-      # Embedding
-      if encoder == 'dpr':
-        question_vector = encode_dpr_question(query)
-      # elif encoder == 'tgi':
-      #   question_vector = encode_dpr_question(query)
-      query_vector = question_vector.detach().numpy().tolist()[0]
+    # Retriever
+    start = time.time()
+    if summarize:
+      limit = top_k * ratio
+    else:
+      limit = top_k
+    results = client.search(collection_name=collection_name,
+                            data=question_vectors, limit=limit, output_fields=['title', 'text'])
+    psgs_list = []
+    for psgs in results:
+      psgs_list.append([psg['entity']['text'] for psg in psgs])
+    ctxs = ['\n'.join(psgs) for psgs in psgs_list]
+    print(f"{batch_size}rows retrieval takes ({time.time() - start:.2f}s)")
 
-      # Retriever
-      if summarize:
-        limit = top_k * ratio
-      else:
-        limit = top_k
-      results = client.search(collection_name=collection_name, data=[
-          query_vector], limit=limit, output_fields=['title', 'text'])
-      texts = [result['entity']['text'] for result in results[0]]
-      ctx = '\n'.join(texts)
+    # Summarizer
+    summaries: List[str] = []
+    # if summarize:
+    #   start = time.time()
+    #   chunk_summaries = []
+    #   for i, ctx in enumerate(ctxs):
+    #     random.seed(ctx)
+    #     random.shuffle(psgs_list[i])
+    #     chunk_size = len(psgs_list[i]) // ratio
+    #   #   for i in range(chunk_size):
+    #   #     summaries.append(summarize_text(summarizer_tokenizer, summarizer_model,
+    #   #                                     '\n'.join(texts[i*ratio:(i+1)*ratio])))
 
-      # Create context
-      summary = None
-      if summarize:
-        summaries = []
-        random.seed(ctx)
-        random.shuffle(texts)
-        chunk = len(texts) // ratio
-        for i in range(chunk):
-          summaries.append(summarize_text(
-              '\n'.join(texts[i*ratio:(i+1)*ratio])))
-        summaries.append(summarize_text('\n'.join(texts[-ratio:])))
-        summary = '\n'.join(summaries)
+    #   # summaries.append(summarize_text('\n'.join(texts[-ratio:])))
+    #   summary = '\n'.join(chunk_summaries)
+    #   print(f"{batch_size}rows encoding takes ({time.time() - start:.2f}s)")
 
-      # Reader
-      response = ask_hf_reader(query, str(summary if summary else ctx))
+    # Reader
+    start = time.time()
+    response = ask_reader(reader_tokenizer, reader_model,
+                          questions, summaries if summarize else ctxs)
+    print(f"{batch_size}rows reaeding takes ({time.time() - start:.2f}s)")
 
-      
+    for i, question in enumerate(questions):
       dict_list.append({
-          'question': query,
-          'answer': answer,
-          'retrieved': ctx,
-          'summary': summary,
-          'predicted': response['answer'],
-          'score': response['score'],
+          'question': question,
+          'answer': answers[i],
+          'retrieved': ctxs[i],
+          'summary': summaries[i] if summarize else None,
+          'predicted': response[i]['answer'],
+          'score': response[i]['score'],
       })
 
     print(
@@ -145,6 +130,47 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     Dataset.from_list(dict_list).push_to_hub(
         token=token, repo_id=f'{user}/{dataset}-{split}',
         config_name=subset)
+
+  return 'Done'
+
+
+@torch.no_grad()
+def chat(top_k=1, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
+         milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100", summarize=False) -> str:
+  connections.connect(
+      host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
+  client = MilvusClient(user=milvus_user, password=milvus_pw,
+                        uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
+
+  # Load models
+  encoder_tokenizer, encoder_model = get_dpr_encoder()
+  summarizer_tokenizer, summarizer_model = get_summarizer()
+  reader_tokenizer, reader_model = get_reader()
+
+  # Conversation loop
+  while True:
+    query = input("\nQuestion: ")
+    if query == "exit":
+      break
+
+    # Embedding
+    question_vectors = encode_dpr_question(
+        encoder_tokenizer, encoder_model, [query])
+    query_vector = question_vectors.detach().cpu().numpy().tolist()[0]
+
+    # Retriever
+    results = client.search(collection_name=collection_name, data=[
+        query_vector], limit=top_k, output_fields=['title', 'text'])
+    texts = [result['entity']['text'] for result in results[0]]
+    ctx = '\n'.join(texts)
+    print(f"\nRetrieved: {ctx}")
+
+    # Reader
+    if summarize:
+      ctx = summarize_text(summarizer_tokenizer, summarizer_model, [f"{ctx}"])
+      print(f"\nSummary: {ctx[0]}")
+    answers = ask_reader(reader_tokenizer, reader_model, [query], [ctx])
+    print(f"\nAnswer: {answers[0]['answer']}")
 
   return 'Done'
 

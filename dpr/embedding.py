@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 import torch
 
 from transformers import DPRQuestionEncoder, DPRQuestionEncoderTokenizer, logging
@@ -6,7 +6,22 @@ from transformers import DPRQuestionEncoder, DPRQuestionEncoderTokenizer, loggin
 logging.set_verbosity_error()
 
 
-def encode_dpr_question(question: str, model_id="facebook/dpr-question_encoder-single-nq-base") -> torch.FloatTensor:
+def encode_dpr_question(tokenizer: DPRQuestionEncoderTokenizer, model: DPRQuestionEncoder, questions: List[str]) -> torch.FloatTensor:
+  """Encode a question using DPR question encoder.
+  https://huggingface.co/docs/transformers/model_doc/dpr#transformers.DPRQuestionEncoder
+
+  Args:
+      question (str): question string to encode
+      model_id (str, optional): Default for NQ or "facebook/dpr-question_encoder-multiset-base
+  """
+  batch_dict = tokenizer(questions, return_tensors="pt",
+                         padding=True, truncation=True,).to('cuda')
+  with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False):
+    embeddings: torch.FloatTensor = model(**batch_dict).pooler_output
+  return embeddings
+
+
+def get_dpr_encoder(model_id="facebook/dpr-question_encoder-single-nq-base") -> Tuple[DPRQuestionEncoder, DPRQuestionEncoderTokenizer]:
   """Encode a question using DPR question encoder.
   https://huggingface.co/docs/transformers/model_doc/dpr#transformers.DPRQuestionEncoder
 
@@ -16,6 +31,4 @@ def encode_dpr_question(question: str, model_id="facebook/dpr-question_encoder-s
   """
   tokenizer = DPRQuestionEncoderTokenizer.from_pretrained(model_id)
   model = DPRQuestionEncoder.from_pretrained(model_id).to('cuda')
-  batch_dict = tokenizer(question, return_tensors="pt").to('cuda')
-  embeddings: torch.FloatTensor = model(**batch_dict).pooler_output
-  return embeddings
+  return tokenizer, model
