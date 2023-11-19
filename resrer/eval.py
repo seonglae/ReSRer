@@ -17,14 +17,16 @@ def evaluate_dataset(id: str, subset: str, metric: str = 'squad_v2',
   # Dataset
   dataset = load_dataset(id, subset)
   dataset_list = list(dataset['train'])
-  metric_input, _ = referee.prepare_data(
+  metric_input, qa = referee.prepare_data(
       dataset['train'], question_col, context_col, id_col, label_col)
 
   # References
   if labeling:
-    for reference in metric_input['references']:
+    for i, reference in enumerate(metric_input['references']):
+      starts = [qa['context'][i].find(answer)
+                for answer in reference['answers']]
       reference['answers'] = {
-          'answer_start': [0], 'text': reference['answers']}
+          'answer_start': starts, 'text': reference['answers']}
 
   # Prediction
   metric_input['predictions'] = []
