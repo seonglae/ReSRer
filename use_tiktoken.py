@@ -1,8 +1,9 @@
-from typing import Dict
+from typing import Dict, List
 import time
 import fire
 from datasets import load_dataset, Dataset
 import tiktoken
+from resrer.utils import split_token, Row
 
 
 def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=True,
@@ -18,43 +19,10 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
     batch_zip = zip(batch_data['id'], batch_data['title'],
                     batch_data['text'], batch_data['url'])
     print(batch_data.keys())
-    rows = [{'id': row[0], 'title': row[1], 'text': row[2], 'url': row[3]}
-            for row in batch_zip]
+    rows: List[Row] = [{'id': row[0], 'title': row[1], 'text': row[2], 'url': row[3]}
+                       for row in batch_zip]
     input_texts = [f"{row['title']}\n{row['text']}" for row in rows]
-    for i, text_tokenes in enumerate(encoder.encode_batch(input_texts)):
-      row = rows[i]
-      passages_count = int((len(text_tokenes) - 1) / split)
-
-      # Append passagees per split
-      # `.` split logic? (floating number)
-      for i in range(passages_count):
-        tokens = text_tokenes[i * split:(i + 1) * split]
-        for token in text_tokenes[(i + 1) * split:]:
-          if not encoder.decode_single_token_bytes(token).startswith(b' '):
-            tokens.append(token)
-          else:
-            break
-        if not encoder.decode_single_token_bytes(text_tokenes[i * split]).startswith(b' '):
-          for token in reversed(text_tokenes[:i * split]):
-            if not encoder.decode_single_token_bytes(token).startswith(b' '):
-              tokens.insert(0, token)
-            else:
-              tokens.insert(0, token)
-              break
-        dict_list.append({'id': f"{row['id']}_{i}", 'title': row['title'], 'url': row['url'],
-                          'text': encoder.decode(tokens)})
-
-      # Last passage from end
-      tokens = text_tokenes[-split:]
-      if not encoder.decode_single_token_bytes(text_tokenes[0]).startswith(b' '):
-        for token in reversed(text_tokenes[:-split]):
-          if not encoder.decode_single_token_bytes(token).startswith(b' '):
-            tokens.insert(0, token)
-          else:
-            tokens.insert(0, token)
-            break
-      dict_list.append({'id': f"{row['id']}_{passages_count}", 'title': row['title'], 'url': row['url'],
-                        'text': encoder.decode(tokens)})
+    dict_list.extend(split_token(encoder, rows, input_texts, split=split))
     print(
         f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
     return {'query': input_texts}
@@ -68,7 +36,6 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
   if token is not None:
     Dataset.from_list(dict_list).push_to_hub(config_name=target,
                                              token=token, repo_id=f'{user}/{dataset_id}-{split}')
-
   return 'done'
 
 
