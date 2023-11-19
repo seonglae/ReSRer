@@ -7,17 +7,14 @@ https://github.com/facebookresearch/DPR/blob/main/dpr/indexer/faiss_indexers.py
 
 import collections
 import logging
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 import os
 import pickle
 import time
-import csv
-import glob
+import torch
 
 import numpy as np
 import faiss
-from torch import nn
-import torch
 
 logger = logging.getLogger()
 
@@ -32,8 +29,8 @@ class DenseIndexer():
 
   def __init__(self, buffer_size: int = 50000):
     self.buffer_size = buffer_size
-    self.index_id_to_db_id = []
-    self.index = None
+    self.index_id_to_db_id: List[int] = []
+    self.index: faiss.Index = None
 
   def init_index(self, vector_sz: int):
     raise NotImplementedError
@@ -99,7 +96,7 @@ class DenseHNSWFlatIndexer(DenseIndexer):
 
   def __init__(
       self,
-      buffer_size: int = 1e9,
+      buffer_size: float = 1e9,
       store_n: int = 512,
       ef_search: int = 128,
       ef_construction: int = 200,
@@ -145,7 +142,6 @@ class DenseHNSWFlatIndexer(DenseIndexer):
       hnsw_vectors = [np.hstack((doc_vector, aux_dims[i].reshape(-1, 1)))
                       for i, doc_vector in enumerate(vectors)]
       hnsw_vectors = np.concatenate(hnsw_vectors, axis=0)
-      self.train(hnsw_vectors)
 
       self._update_id_mapping(db_ids)
       self.index.add(hnsw_vectors)
@@ -153,7 +149,7 @@ class DenseHNSWFlatIndexer(DenseIndexer):
     indexed_cnt = len(self.index_id_to_db_id)
     logger.info("Total data indexed %d", indexed_cnt)
 
-  def search_knn(self, query_vectors: np.array, top_docs: int) -> List[Tuple[List[object], List[float]]]:
+  def search_knn(self, query_vectors: torch.Tensor, top_docs: int) -> List[Tuple[List[object], List[float]]]:
     logger.info("query_hnsw_vectors %s", query_vectors.shape)
     scores, indexes = self.index.search(query_vectors, top_docs)
     # convert to external ids
