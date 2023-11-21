@@ -1,8 +1,10 @@
 from typing import TypedDict, List, Dict
 
 import torch
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+import numpy as np
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
 from transformers.modeling_outputs import QuestionAnsweringModelOutput
+from transformers import QuestionAnsweringPipeline
 
 
 class AnswerInfo(TypedDict):
@@ -12,28 +14,17 @@ class AnswerInfo(TypedDict):
   answer: str
 
 
-def get_answers(tokenizer: AutoTokenizer, output: QuestionAnsweringModelOutput, batch_dict: Dict) -> AnswerInfo:
-  start = int(torch.argmax(output.start_logits))
-  end = int(torch.argmax(output.end_logits)) + 1
-  score = float(torch.max(output.start_logits) + torch.max(output.end_logits))
-  answer = tokenizer.decode(tokenizer.encode(
-      tokenizer.decode(batch_dict['input_ids'][0][start:end])))
-  return AnswerInfo(score=score, start=start, end=end, answer=answer)
-
-
-@torch.no_grad()
+@torch.inference_mode()
 def ask_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering,
                questions: List[str], ctxs: List[str]) -> List[AnswerInfo]:
-  inputs = tokenizer(questions, ctxs, return_tensors='pt', stride=50,
-                     return_offsets_mapping=True, return_overflowing_tokens=True,
-                     truncation='only_second', padding=True).to('cuda')
   with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False):
-    res = model(inputs['input_ids'])
-  print(res)
-  return res
+    pipeline = QuestionAnsweringPipeline(
+        model=model, tokenizer=tokenizer, device='cuda')
+    answer_infos: List[AnswerInfo] = pipeline(question=questions, context=ctxs)
+  return answer_infos
 
 
 def get_reader(model_id="mrm8488/longformer-base-4096-finetuned-squadv2"):
   tokenizer = AutoTokenizer.from_pretrained(model_id)
-  model = AutoModelForQuestionAnswering.from_pretrained(model_id).to('cuda')
+  model = AutoModelForQuestionAnswering.from_pretrained(model_id).to(1)
   return tokenizer, model

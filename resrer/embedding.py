@@ -19,8 +19,8 @@ def encode_hf(input_texts: List[str], model_id: str = 'thenlper/gte-small',
   model = AutoModel.from_pretrained(model_id).to('cuda')
   input_texts = [prefix + input_text for input_text in input_texts]
   # Tokenize the input texts
-  batch_dict = tokenizer(input_texts, max_length=512,
-                         padding=True, truncation=True, return_tensors='pt').to('cuda')
+  batch_dict = tokenizer(input_texts, padding=True,
+                         truncation=True, return_tensors='pt').to('cuda')
   outputs = model(**batch_dict)
   embeddings = average_pool(outputs.last_hidden_state,
                             batch_dict['attention_mask'])
