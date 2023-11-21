@@ -1,6 +1,6 @@
 import time
 import random
-from typing import Dict, List
+from typing import Dict, List, MutableSequence
 
 import fire
 import torch
@@ -16,23 +16,22 @@ from resrer.summarizer import summarize_text, get_summarizer
 config = dotenv_values(".env")
 
 
-@torch.no_grad()
+@torch.inference_mode()
 def evaluate():
   raw = evaluate_dataset('seonglae/nq_open-validation',
-                         'psgs_w100-dpr_nq-pegasus-x-large-book-summary-longformer-base-4096-finetuned-squadv2.raw')
-  summarized = evaluate_dataset('seonglae/nq_open-validation',
-                                'psgs_w100-dpr_nq-pegasus-x-large-book-summary-longformer-base-4096-finetuned-squadv2.summarized', context_col='summary')
+                         'psgs_w100.dpr_nq.1_pegasus-x-large-book-summary.1_longformer-base-4096-finetuned-squadv2')
 
-  result = f"Raw: {raw}\nSummarized: {summarized}"
+  result = f"Raw: {raw}"
+  # result = f"Summarized: {summarized}"
   return result
 
 
-@torch.no_grad()
-def dataset(top_k: int = 100, milvus_port='19530', summarize=False, dataset='nq_open',
+@torch.inference_mode()
+def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open',
             encoder='dpr', split='validation', summarizer='pszemraj/pegasus-x-large-book-summary',
-            reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio: int = 8,
+            reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio: int = 1,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
-            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=4, user='seonglae') -> str:
+            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=32, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
@@ -46,14 +45,20 @@ def dataset(top_k: int = 100, milvus_port='19530', summarize=False, dataset='nq_
   reader_tokenizer, reader_model = get_reader()
   if summarize:
     summarizer_tokenizer, summarizer_model = get_summarizer()
-  batch_start = time.time()
+  timer = {"start": time.time(), "end": time.time()}
   dict_list: List[Dict] = []
+
+  # Subset
+  if summarize:
+    subset = f"{db_name}.{collection_name}.{top_k}_{summarizer.split('/')[1]}.{ratio}_{reader.split('/')[1]}"
+  else:
+    subset = f"{db_name}.{collection_name}.{top_k}_{reader.split('/')[1]}"
 
   # Batch processing function
   def batch_qa(batch_data: Dict):
-    print(f"Batch {len(dict_list)} takes ({time.time() - batch_start:.2f}s)")
-    start = time.time()
-    batch_zip = zip(batch_data['question'], batch_data['answer'])
+    print(f"({time.time() - timer['end']:.2f}s): streaming")
+    batch_start = time.time()
+    batch_zip = list(zip(batch_data['question'], batch_data['answer']))
     questions = [row[0] for row in batch_zip]
     answers = [row[1] for row in batch_zip]
 
@@ -63,7 +68,7 @@ def dataset(top_k: int = 100, milvus_port='19530', summarize=False, dataset='nq_
       question_vectors = encode_dpr_question(
           encoder_tokenizer, encoder_model, questions)
       question_vectors = question_vectors.detach().cpu().numpy().tolist()
-    print(f"{batch_size}rows encoding takes ({time.time() - start:.2f}s)")
+    print(f"({time.time() - start:.2f}s): encoding")
 
     # Retriever
     start = time.time()
@@ -73,34 +78,41 @@ def dataset(top_k: int = 100, milvus_port='19530', summarize=False, dataset='nq_
       limit = top_k
     results = client.search(collection_name=collection_name,
                             data=question_vectors, limit=limit, output_fields=['title', 'text'])
-    psgs_list = []
+    psgs_list: List[List[str]] = []
     for psgs in results:
       psgs_list.append([psg['entity']['text'] for psg in psgs])
     ctxs = ['\n'.join(psgs) for psgs in psgs_list]
-    print(f"{batch_size}rows retrieval takes ({time.time() - start:.2f}s)")
+    print(f"({time.time() - start:.2f}s): retrieval")
 
     # Summarizer
     summaries: List[str] = []
-    # if summarize:
-    #   start = time.time()
-    #   chunk_summaries = []
-    #   for i, ctx in enumerate(ctxs):
-    #     random.seed(ctx)
-    #     random.shuffle(psgs_list[i])
-    #     chunk_size = len(psgs_list[i]) // ratio
-    #   #   for i in range(chunk_size):
-    #   #     summaries.append(summarize_text(summarizer_tokenizer, summarizer_model,
-    #   #                                     '\n'.join(texts[i*ratio:(i+1)*ratio])))
-
-    #   # summaries.append(summarize_text('\n'.join(texts[-ratio:])))
-    #   summary = '\n'.join(chunk_summaries)
-    #   print(f"{batch_size}rows encoding takes ({time.time() - start:.2f}s)")
+    if summarize:
+      start = time.time()
+      if ratio == 1:
+        # Memory bound to batch_size
+        summaries.extend(summarize_text(
+            summarizer_tokenizer, summarizer_model, ctxs))
+      else:
+        # Memory bound to ratio
+        summary_ctxs: List[str] = []
+        for i, ctx in enumerate(ctxs):
+          random.seed(ctx)
+          random.shuffle(psgs_list[i])
+          chunk_size = len(psgs_list[i]) // ratio
+          print(chunk_size)
+          for j in range(chunk_size):
+            summary_ctxs.append('\n'.join(psgs_list[i][j*ratio:(j+1)*ratio]))
+          summary_ctxs.append('\n'.join(psgs_list[i][-ratio:]))
+          chunk_summaries = summarize_text(
+              summarizer_tokenizer, summarizer_model, summary_ctxs)
+          summaries.append('\n'.join(chunk_summaries))
+      print(f"({time.time() - start:.2f}s): summarizing")
 
     # Reader
     start = time.time()
-    response = ask_reader(reader_tokenizer, reader_model,
+    predicts = ask_reader(reader_tokenizer, reader_model,
                           questions, summaries if summarize else ctxs)
-    print(f"{batch_size}rows reaeding takes ({time.time() - start:.2f}s)")
+    print(f"({time.time() - start:.2f}s): reading")
 
     for i, question in enumerate(questions):
       dict_list.append({
@@ -108,12 +120,14 @@ def dataset(top_k: int = 100, milvus_port='19530', summarize=False, dataset='nq_
           'answer': answers[i],
           'retrieved': ctxs[i],
           'summary': summaries[i] if summarize else None,
-          'predicted': response[i]['answer'],
-          'score': response[i]['score'],
+          'predicted': predicts[i]['answer'],
+          'score': predicts[i]['score'],
       })
 
-    print(
-        f"Batched {len(batch_data['question'])}rows takes ({time.time() - start:.2f}s)")
+    print(f"({time.time() - batch_start:.2f}s): [total]")
+    print(f"({time.time() - timer['start']:.2f}s) {len(dict_list)}")
+    print(f"{subset}\n")
+    timer['end'] = time.time()
     return batch_data
 
   # Batch processing
@@ -123,10 +137,6 @@ def dataset(top_k: int = 100, milvus_port='19530', summarize=False, dataset='nq_
 
   # Upload to HuggingFace Hub
   if token is not None:
-    if summarize:
-      subset = f"{db_name}.{collection_name}.{top_k}_{summarizer.split('/')[1]}_{reader.split('/')[1]}"
-    else:
-      subset = f"{db_name}.{collection_name}.{top_k}_{reader.split('/')[1]}"
     Dataset.from_list(dict_list).push_to_hub(
         token=token, repo_id=f'{user}/{dataset}-{split}',
         config_name=subset)
@@ -134,7 +144,7 @@ def dataset(top_k: int = 100, milvus_port='19530', summarize=False, dataset='nq_
   return 'Done'
 
 
-@torch.no_grad()
+@torch.inference_mode()
 def chat(top_k=1, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
          milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100", summarize=False) -> str:
   connections.connect(
