@@ -26,5 +26,5 @@ def ask_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering,
 
 def get_reader(model_id="mrm8488/longformer-base-4096-finetuned-squadv2"):
   tokenizer = AutoTokenizer.from_pretrained(model_id)
-  model = AutoModelForQuestionAnswering.from_pretrained(model_id).to(1)
+  model = AutoModelForQuestionAnswering.from_pretrained(model_id).to(0)
   return tokenizer, model
