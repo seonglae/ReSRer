@@ -1,12 +1,13 @@
 from typing import TypedDict, List, Dict
+from re import sub
 
 import torch
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering, DPRReaderTokenizer, DPRReader
 from transformers.modeling_outputs import QuestionAnsweringModelOutput
 from transformers import QuestionAnsweringPipeline
 
-max_answer_len = 5
+max_answer_len = 8
 
 
 class AnswerInfo(TypedDict):
@@ -24,10 +25,12 @@ def ask_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering,
         model=model, tokenizer=tokenizer, device='cuda', max_answer_len=max_answer_len)
     answer_infos: List[AnswerInfo] = pipeline(
         question=questions, context=ctxs)
+  for answer_info in answer_infos:
+    answer_info['answer'] = sub(r'[.\(\)"\',]', '', answer_info['answer'])
   return answer_infos
 
 
 def get_reader(model_id="mrm8488/longformer-base-4096-finetuned-squadv2"):
-  tokenizer = AutoTokenizer.from_pretrained(model_id)
-  model = AutoModelForQuestionAnswering.from_pretrained(model_id).to(0)
+  tokenizer = DPRReaderTokenizer.from_pretrained(model_id)
+  model = DPRReader.from_pretrained(model_id).to(0)
   return tokenizer, model

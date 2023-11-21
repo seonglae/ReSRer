@@ -19,7 +19,7 @@ config = dotenv_values(".env")
 @torch.inference_mode()
 def evaluate():
   raw = evaluate_dataset('seonglae/nq_open-validation',
-                         'psgs_w100.dpr_nq.10_longformer-base-4096-finetuned-squadv2')
+                         'psgs_w100.dpr_nq.1_dpr-reader-single-nq-base')
 
   result = f"Raw: {raw}"
   # result = f"Summarized: {summarized}"
@@ -31,7 +31,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
             encoder='dpr', split='validation', summarizer='ccdv/lsg-bart-base-4096-booksum',
             reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio: int = 1, stream: bool = False,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
-            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=32, user='seonglae') -> str:
+            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=16, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
@@ -73,7 +73,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     # Retriever
     start = time.time()
     if summarize:
-      limit = top_k * ratio
+      limit = int(top_k) * ratio
     else:
       limit = top_k
     results = client.search(collection_name=collection_name,
