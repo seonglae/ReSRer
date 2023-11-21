@@ -19,7 +19,7 @@ config = dotenv_values(".env")
 @torch.inference_mode()
 def evaluate():
   raw = evaluate_dataset('seonglae/nq_open-validation',
-                         'psgs_w100.dpr_nq.1_pegasus-x-large-book-summary.1_longformer-base-4096-finetuned-squadv2')
+                         'psgs_w100.dpr_nq.10_longformer-base-4096-finetuned-squadv2')
 
   result = f"Raw: {raw}"
   # result = f"Summarized: {summarized}"
@@ -28,8 +28,8 @@ def evaluate():
 
 @torch.inference_mode()
 def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open',
-            encoder='dpr', split='validation', summarizer='pszemraj/pegasus-x-large-book-summary',
-            reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio: int = 1,
+            encoder='dpr', split='validation', summarizer='ccdv/lsg-bart-base-4096-booksum',
+            reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio: int = 1, stream: bool = False,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
             collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=32, user='seonglae') -> str:
   connections.connect(
@@ -37,14 +37,14 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
   client = MilvusClient(user=milvus_user, password=milvus_pw,
                         uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
 
-  qa_dataset = load_dataset(dataset, split=split, streaming=True)
+  qa_dataset = load_dataset(dataset, split=split, streaming=stream)
 
   # Load models
   if encoder == 'dpr':
     encoder_tokenizer, encoder_model = get_dpr_encoder()
-  reader_tokenizer, reader_model = get_reader()
+  reader_tokenizer, reader_model = get_reader(reader)
   if summarize:
-    summarizer_tokenizer, summarizer_model = get_summarizer()
+    summarizer_tokenizer, summarizer_model = get_summarizer(summarizer)
   timer = {"start": time.time(), "end": time.time()}
   dict_list: List[Dict] = []
 

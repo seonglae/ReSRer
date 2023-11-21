@@ -6,6 +6,8 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
 from transformers.modeling_outputs import QuestionAnsweringModelOutput
 from transformers import QuestionAnsweringPipeline
 
+max_answer_len = 5
+
 
 class AnswerInfo(TypedDict):
   score: float
@@ -19,8 +21,9 @@ def ask_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering,
                questions: List[str], ctxs: List[str]) -> List[AnswerInfo]:
   with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False):
     pipeline = QuestionAnsweringPipeline(
-        model=model, tokenizer=tokenizer, device='cuda')
-    answer_infos: List[AnswerInfo] = pipeline(question=questions, context=ctxs)
+        model=model, tokenizer=tokenizer, device='cuda', max_answer_len=max_answer_len)
+    answer_infos: List[AnswerInfo] = pipeline(
+        question=questions, context=ctxs)
   return answer_infos
 
 
