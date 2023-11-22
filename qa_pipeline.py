@@ -20,9 +20,11 @@ config = dotenv_values(".env")
 def evaluate():
   raw = evaluate_dataset('seonglae/nq_open-validation',
                          'psgs_w100.dpr_nq.1_dpr-reader-single-nq-base')
+  summarized = evaluate_dataset('seonglae/nq_open-validation',
+                                'psgs_w100.dpr_nq.10_lsg-bart-base-4096-booksum.1_dpr-reader-single-nq-base')
 
-  result = f"Raw: {raw}"
-  # result = f"Summarized: {summarized}"
+  result = f"Raw: {raw}\n"
+  result += f"Summarized: {summarized}\n"
   return result
 
 

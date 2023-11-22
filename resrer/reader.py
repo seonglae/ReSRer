@@ -3,11 +3,11 @@ from re import sub
 
 import torch
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering, DPRReaderTokenizer, DPRReader
-from transformers.modeling_outputs import QuestionAnsweringModelOutput
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering, DPRReaderTokenizer, DPRReader, logging
 from transformers import QuestionAnsweringPipeline
 
 max_answer_len = 8
+logging.set_verbosity_error()
 
 
 class AnswerInfo(TypedDict):
