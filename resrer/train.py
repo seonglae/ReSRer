@@ -42,7 +42,7 @@ def training(output='seonglae/resrer-bart-base', dataset_id='seonglae/resrer-nq'
       output_dir=output,
       evaluation_strategy="epoch",
       learning_rate=2e-5,
-      per_device_train_batch_size=16,
+      per_device_train_batch_size=4,
       optim='adamw_hf',
       weight_decay=0.01,
       save_total_limit=3,
