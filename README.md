@@ -1,6 +1,6 @@
 # ReSRer
 
-## Introduction
+[![ReSRer Demo](image/image.png)](https://huggingface.co/spaces/seonglae/resrer-demo)
 
 ## Get Started
 
