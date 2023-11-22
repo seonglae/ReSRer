@@ -15,8 +15,9 @@ wheels/
 *.dpr
 *.tsv
 
-# chroma
+# data
 *.sqlite3
+*.parquet
 *.bin
 *.pickle
 chroma.log
@@ -25,3 +26,6 @@ chroma.sqlite3-journal
 # mypy
 .dmypy.json
 .mypy_cache/
+
+# model
+seonglae
