@@ -30,10 +30,10 @@ def evaluate():
 
 @torch.inference_mode()
 def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open',
-            encoder='dpr', split='validation', summarizer='ccdv/lsg-bart-base-4096-booksum',
-            reader="mrm8488/longformer-base-4096-finetuned-squadv2", ratio: int = 1, stream: bool = False,
+            encoder='dpr', split='validation', summarizer='seonglae/resrer-pegasus-x',
+            reader="facebook/dpr-reader-single-nq-base", ratio: int = 1, stream: bool = False,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
-            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=16, user='seonglae') -> str:
+            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=3, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
@@ -147,7 +147,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
 
 
 @torch.inference_mode()
-def chat(top_k=1, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
+def chat(top_k=10, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
          milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100", summarize=False) -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
@@ -179,8 +179,9 @@ def chat(top_k=1, milvus_port='19530', milvus_user='resrer', milvus_host=config[
 
     # Reader
     if summarize:
-      ctx = summarize_text(summarizer_tokenizer, summarizer_model, [f"{ctx}"])
-      print(f"\nSummary: {ctx[0]}")
+      summaries = summarize_text(summarizer_tokenizer, summarizer_model, [f"{ctx}"])
+      ctx = summaries[0]
+      print(f"\nSummary: {ctx}")
     answers = ask_reader(reader_tokenizer, reader_model, [query], [ctx])
     print(f"\nAnswer: {answers[0]['answer']}")
 
