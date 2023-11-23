@@ -1,0 +1,21 @@
+{
+  "apps": [
+    {
+      "name": "gpt",
+      "script": "/root/ReSRer/qa_pipeline.py",
+      "args": [
+        "dataset",
+        "--top_k",
+        "1",
+        "--batch",
+        "1",
+        "--reader",
+        "gpt-3.5-turbo"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    }
+  ]
+}

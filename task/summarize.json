@@ -1,0 +1,24 @@
+{
+  "apps": [
+    {
+      "name": "summarize",
+      "script": "/root/ReSRer/qa_pipeline.py",
+      "args": [
+        "dataset",
+        "--top_k",
+        "10",
+        "--batch",
+        "32",
+        "--reader",
+        "facebook/dpr-reader-single-nq-base",
+        "--summarize",
+        "--summarizer",
+        "seonglae/resrer-bart-base"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    }
+  ]
+}
