@@ -10,7 +10,7 @@ from datasets import load_dataset, Dataset
 
 from dpr.embedding import encode_dpr_question, get_dpr_encoder
 from resrer.eval import evaluate_dataset
-from resrer.reader import ask_reader, get_reader
+from resrer.reader import ask_reader, get_reader, ask_openai
 from resrer.summarizer import summarize_text, get_summarizer
 
 config = dotenv_values(".env")
@@ -21,7 +21,7 @@ def evaluate():
   raw = evaluate_dataset('seonglae/nq_open-validation',
                          'psgs_w100.dpr_nq.1_dpr-reader-single-nq-base')
   summarized = evaluate_dataset('seonglae/nq_open-validation',
-                                'psgs_w100.dpr_nq.10_lsg-bart-base-4096-booksum.1_dpr-reader-single-nq-base')
+                                'psgs_w100.dpr_nq.10_resrer-bart-base.1_dpr-reader-single-nq-base')
 
   result = f"Raw: {raw}\n"
   result += f"Summarized: {summarized}\n"
@@ -30,10 +30,10 @@ def evaluate():
 
 @torch.inference_mode()
 def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open',
-            encoder='dpr', split='validation', summarizer='seonglae/resrer-pegasus-x',
+            encoder='dpr', split='validation', summarizer='seonglae/resrer-bart-base',
             reader="facebook/dpr-reader-single-nq-base", ratio: int = 1, stream: bool = False,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
-            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=8, user='seonglae') -> str:
+            collection_name='dpr_nq', db_name="psgs_w100", token=None, batch_size=30, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
@@ -44,21 +44,27 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
   # Load models
   if encoder == 'dpr':
     encoder_tokenizer, encoder_model = get_dpr_encoder()
-  reader_tokenizer, reader_model = get_reader(reader)
+  if 'gpt' not in reader:
+    reader_tokenizer, reader_model = get_reader(reader)
   if summarize:
     summarizer_tokenizer, summarizer_model = get_summarizer(summarizer)
-  timer = {"start": time.time(), "end": time.time()}
+  timer = {"start": time.time()}
   dict_list: List[Dict] = []
 
   # Subset
   if summarize:
-    subset = f"{db_name}.{collection_name}.{top_k}_{summarizer.split('/')[1]}.{ratio}_{reader.split('/')[1]}"
+    reader_id = reader
+    if '/' in reader:
+      reader_id = reader.split('/')[1]
+    subset = f"{db_name}.{collection_name}.{top_k}_{summarizer.split('/')[1]}.{ratio}_{reader_id}"
   else:
-    subset = f"{db_name}.{collection_name}.{top_k}_{reader.split('/')[1]}"
+    reader_id = reader
+    if '/' in reader:
+      reader_id = reader.split('/')[1]
+    subset = f"{db_name}.{collection_name}.{top_k}_{reader_id}"
 
   # Batch processing function
   def batch_qa(batch_data: Dict):
-    print(f"({time.time() - timer['end']:.2f}s): streaming")
     batch_start = time.time()
     batch_zip = list(zip(batch_data['question'], batch_data['answer']))
     questions = [row[0] for row in batch_zip]
@@ -112,8 +118,11 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
 
     # Reader
     start = time.time()
-    predicts = ask_reader(reader_tokenizer, reader_model,
-                          questions, summaries if summarize else ctxs)
+    if 'gpt' in reader:
+      predicts = ask_openai(reader, questions, summaries if summarize else ctxs)
+    else:
+      predicts = ask_reader(reader_tokenizer, reader_model,
+                            questions, summaries if summarize else ctxs)
     print(f"({time.time() - start:.2f}s): reading")
 
     for i, question in enumerate(questions):
@@ -129,7 +138,6 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     print(f"({time.time() - batch_start:.2f}s): [total]")
     print(f"({time.time() - timer['start']:.2f}s) {len(dict_list)}")
     print(f"{subset}\n")
-    timer['end'] = time.time()
     return batch_data
 
   # Batch processing
@@ -179,7 +187,8 @@ def chat(top_k=10, milvus_port='19530', milvus_user='resrer', milvus_host=config
 
     # Reader
     if summarize:
-      summaries = summarize_text(summarizer_tokenizer, summarizer_model, [f"{ctx}"])
+      summaries = summarize_text(
+          summarizer_tokenizer, summarizer_model, [f"{ctx}"])
       ctx = summaries[0]
       print(f"\nSummary: {ctx}")
     answers = ask_reader(reader_tokenizer, reader_model, [query], [ctx])
