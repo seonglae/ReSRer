@@ -45,13 +45,17 @@ def get_reader(model_id="facebook/dpr-reader-single-nq-base"):
 
 # OpenAI readrer
 async def ask_openai_single(model, question: str, ctx: str) -> AnswerInfo:
-  system = 'User question Instructions: Extract noun answer for question from context under 3 words. You must extract answer from a context at most 8 words.'
+  system = 'User question Instructions: Extract noun answer for question from context under 5 words. You must extract answer from a context at most 8 words.'
   user = f'question: {question}\ncontext: {ctx}'
-  res = await client.chat.completions.create(messages=[
-      {"role": "system", "content": system},
-      {"role": "user", "content": user}
-  ], model=model, stream=False)
-  return {"answer": str(res.choices[0].message.content), "score": 0, "start": 0, "end": 0}
+  while True:
+    try:
+      res = await client.chat.completions.create(messages=[
+          {"role": "system", "content": system},
+          {"role": "user", "content": user}
+      ], model=model, stream=False, max_tokens=20, timeout=5)
+    except Exception as _:
+      continue
+    return {"answer": str(res.choices[0].message.content), "score": 0, "start": 0, "end": 0}
 
 
 async def ask_openai_batch(model, questions: List[str], ctxs: List[str]) -> List[AnswerInfo]:
