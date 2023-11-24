@@ -19,9 +19,9 @@ config = dotenv_values(".env")
 @torch.inference_mode()
 def evaluate():
   raw = evaluate_dataset('seonglae/nq_open-validation',
-                         'psgs_w100.dpr_nq.1_dpr-reader-single-nq-base')
+                         'psgs_w100.dpr_nq.1_gpt-3.5-turbo')
   summarized = evaluate_dataset('seonglae/nq_open-validation',
-                                'psgs_w100.dpr_nq.10_resrer-bart-base.1_dpr-reader-single-nq-base')
+                                'psgs_w100.dpr_nq.10_resrer-bart-base.1_gpt-3.5-turbo')
 
   result = f"Raw: {raw}\n"
   result += f"Summarized: {summarized}\n"
@@ -148,7 +148,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
   # Upload to HuggingFace Hub
   if token is not None:
     Dataset.from_list(dict_list).push_to_hub(
-        token=token, repo_id=f'{user}/{dataset}-{split}',
+        token=token, repo_id=f'{user}/{dataset}-validation',
         config_name=subset)
 
   return 'Done'
