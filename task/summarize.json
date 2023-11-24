@@ -1,16 +1,16 @@
 {
   "apps": [
     {
-      "name": "summarize",
+      "name": "summarize-gpt",
       "script": "/root/ReSRer/qa_pipeline.py",
       "args": [
         "dataset",
         "--top_k",
         "10",
-        "--batch",
-        "32",
+        "--batch_size",
+        "8",
         "--reader",
-        "facebook/dpr-reader-single-nq-base",
+        "gpt-3.5-turbo",
         "--summarize",
         "--summarizer",
         "seonglae/resrer-bart-base"

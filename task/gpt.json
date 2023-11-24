@@ -7,8 +7,8 @@
         "dataset",
         "--top_k",
         "1",
-        "--batch",
-        "1",
+        "--batch_size",
+        "3",
         "--reader",
         "gpt-3.5-turbo"
       ],

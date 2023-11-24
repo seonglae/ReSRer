@@ -4,10 +4,12 @@ from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer, DataCollatorF
 import numpy as np
 import torch
 from huggingface_hub import login
+from dotenv import dotenv_values
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
+config = dotenv_values(".env")
 
 def preprocesser(tokenizer):
   def preprocess_function(examples):
@@ -22,7 +24,7 @@ def preprocesser(tokenizer):
 
 
 def training(output='seonglae/resrer-bart-base', dataset_id='seonglae/resrer-nq', checkpoint='facebook/bart-base',
-             token=None):
+             token=config['HF_TOKEN']):
   if token is not None:
     login(token=token)
   # Load model

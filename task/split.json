@@ -5,7 +5,8 @@
       "script": "/root/ReSRer/use_tiktoken.py",
       "args": [
         "split",
-        "--token"
+        "--split",
+        "256"
       ],
       "wait_ready": false,
       "autorestart": false,
