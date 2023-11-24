@@ -4,8 +4,7 @@
       "name": "split",
       "script": "/root/ReSRer/use_tiktoken.py",
       "args": [
-        "count",
-        "--token"
+        "count"
       ],
       "wait_ready": false,
       "autorestart": false,

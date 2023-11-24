@@ -21,7 +21,7 @@ def encode_dpr_question(tokenizer: DPRQuestionEncoderTokenizer, model: DPRQuesti
   return embeddings
 
 
-def get_dpr_encoder(model_id="facebook/dpr-question_encoder-single-nq-base", device="cuda") -> Tuple[DPRQuestionEncoder, DPRQuestionEncoderTokenizer]:
+def get_dpr_encoder(model_id="facebook/dpr-question_encoder-multiset-base", device="cuda") -> Tuple[DPRQuestionEncoder, DPRQuestionEncoderTokenizer]:
   """Encode a question using DPR question encoder.
   https://huggingface.co/docs/transformers/model_doc/dpr#transformers.DPRQuestionEncoder
 

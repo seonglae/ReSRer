@@ -31,7 +31,7 @@ def evaluate():
 @torch.inference_mode()
 def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open', device='cuda',
             encoder='dpr', split='validation', summarizer='seonglae/resrer-bart-base',
-            reader="facebook/dpr-reader-single-nq-base", ratio: int = 1, stream: bool = False,
+            reader="facebook/dpr-reader-multiset-base", ratio: int = 1, stream: bool = False,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
             collection_name='dpr_nq', db_name="psgs_w100", token=config['HF_TOKEN'], batch_size=30, user='seonglae') -> str:
   connections.connect(

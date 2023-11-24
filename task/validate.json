@@ -4,8 +4,7 @@
       "name": "validate-raw",
       "script": "/root/ReSRer/qa_pipeline.py",
       "args": [
-        "dataset",
-        "--token"
+        "dataset"
       ],
       "wait_ready": false,
       "autorestart": false,
@@ -17,8 +16,7 @@
       "script": "/root/ReSRer/qa_pipeline.py",
       "args": [
         "dataset",
-        "--summarize",
-        "--token"
+        "--summarize"
       ],
       "wait_ready": false,
       "autorestart": false,

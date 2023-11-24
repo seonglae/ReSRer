@@ -37,7 +37,7 @@ def ask_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering,
   return answer_infos
 
 
-def get_reader(model_id="facebook/dpr-reader-single-nq-base", device="cuda"):
+def get_reader(model_id="facebook/dpr-reader-multiset-base", device="cuda"):
   tokenizer = DPRReaderTokenizer.from_pretrained(model_id)
   model = DPRReader.from_pretrained(model_id).to(device)
   return tokenizer, model
