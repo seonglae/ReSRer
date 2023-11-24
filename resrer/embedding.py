@@ -14,13 +14,13 @@ def average_pool(last_hidden_states: Tensor,
 
 
 def encode_hf(input_texts: List[str], model_id: str = 'thenlper/gte-small',
-              prefix: str = ''):
+              prefix: str = '', device='cuda'):
   tokenizer = AutoTokenizer.from_pretrained(model_id)
-  model = AutoModel.from_pretrained(model_id).to('cuda')
+  model = AutoModel.from_pretrained(model_id).to(device)
   input_texts = [prefix + input_text for input_text in input_texts]
   # Tokenize the input texts
   batch_dict = tokenizer(input_texts, padding=True,
-                         truncation=True, return_tensors='pt').to('cuda')
+                         truncation=True, return_tensors='pt').to(device)
   outputs = model(**batch_dict)
   embeddings = average_pool(outputs.last_hidden_state,
                             batch_dict['attention_mask'])

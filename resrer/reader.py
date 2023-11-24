@@ -24,10 +24,10 @@ class AnswerInfo(TypedDict):
 
 @torch.inference_mode()
 def ask_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering,
-               questions: List[str], ctxs: List[str]) -> List[AnswerInfo]:
+               questions: List[str], ctxs: List[str], device='cuda') -> List[AnswerInfo]:
   with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False):
     pipeline = QuestionAnsweringPipeline(
-        model=model, tokenizer=tokenizer, device='cuda', max_answer_len=max_answer_len)
+        model=model, tokenizer=tokenizer, device=device, max_answer_len=max_answer_len)
     answer_infos: List[AnswerInfo] = pipeline(
         question=questions, context=ctxs)
   if not isinstance(answer_infos, list):
@@ -37,9 +37,9 @@ def ask_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering,
   return answer_infos
 
 
-def get_reader(model_id="facebook/dpr-reader-single-nq-base"):
+def get_reader(model_id="facebook/dpr-reader-single-nq-base", device="cuda"):
   tokenizer = DPRReaderTokenizer.from_pretrained(model_id)
-  model = DPRReader.from_pretrained(model_id).to(0)
+  model = DPRReader.from_pretrained(model_id).to(device)
   return tokenizer, model
 
 

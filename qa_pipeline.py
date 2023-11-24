@@ -29,7 +29,7 @@ def evaluate():
 
 
 @torch.inference_mode()
-def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open',
+def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open', device='cuda',
             encoder='dpr', split='validation', summarizer='seonglae/resrer-bart-base',
             reader="facebook/dpr-reader-single-nq-base", ratio: int = 1, stream: bool = False,
             milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
@@ -43,11 +43,12 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
 
   # Load models
   if encoder == 'dpr':
-    encoder_tokenizer, encoder_model = get_dpr_encoder()
+    encoder_tokenizer, encoder_model = get_dpr_encoder(device=device)
   if 'gpt' not in reader:
-    reader_tokenizer, reader_model = get_reader(reader)
+    reader_tokenizer, reader_model = get_reader(reader, device=device)
   if summarize:
-    summarizer_tokenizer, summarizer_model = get_summarizer(summarizer)
+    summarizer_tokenizer, summarizer_model = get_summarizer(
+        summarizer, device=device)
   timer = {"start": time.time()}
   dict_list: List[Dict] = []
 
@@ -99,7 +100,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
       if ratio == 1:
         # Memory bound to batch_size
         summaries.extend(summarize_text(
-            summarizer_tokenizer, summarizer_model, ctxs))
+            summarizer_tokenizer, summarizer_model, ctxs, device=device))
       else:
         # Memory bound to ratio
         summary_ctxs: List[str] = []
@@ -112,17 +113,18 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
             summary_ctxs.append('\n'.join(psgs_list[i][j*ratio:(j+1)*ratio]))
           summary_ctxs.append('\n'.join(psgs_list[i][-ratio:]))
           chunk_summaries = summarize_text(
-              summarizer_tokenizer, summarizer_model, summary_ctxs)
+              summarizer_tokenizer, summarizer_model, summary_ctxs, device=device)
           summaries.append('\n'.join(chunk_summaries))
       print(f"({time.time() - start:.2f}s): summarizing")
 
     # Reader
     start = time.time()
     if 'gpt' in reader:
-      predicts = ask_openai(reader, questions, summaries if summarize else ctxs)
+      predicts = ask_openai(
+          reader, questions, summaries if summarize else ctxs)
     else:
       predicts = ask_reader(reader_tokenizer, reader_model,
-                            questions, summaries if summarize else ctxs)
+                            questions, summaries if summarize else ctxs, device=device)
     print(f"({time.time() - start:.2f}s): reading")
 
     for i, question in enumerate(questions):
