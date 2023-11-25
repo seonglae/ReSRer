@@ -22,7 +22,6 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
     start = time.time()
     batch_zip = zip(batch_data['id'], batch_data['title'],
                     batch_data['text'], batch_data['url'])
-    print(batch_data.keys())
     rows: List[Row] = [{'id': row[0], 'title': row[1], 'text': row[2], 'url': row[3]}
                        for row in batch_zip]
     input_texts = [f"{row['title']}\n{row['text']}" for row in rows]
@@ -79,7 +78,6 @@ def count(dataset_id="wiki_dpr", target='gpt-4', subset='psgs_w100.nq.no_index.n
   def batch_count(batch_data: Dict):
     start = time.time()
     batch_zip = zip(batch_data['id'], batch_data['title'], batch_data['text'])
-    print(batch_data.keys())
     rows = [{'id': row[0], 'title': row[1], 'text': row[2]}
             for row in batch_zip]
     input_texts = [f"{row['title']}\n{row['text']}" for row in rows]

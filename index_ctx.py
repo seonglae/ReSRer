@@ -57,7 +57,6 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
   def batch_index(batch_data: Dict):
     start = time.time()
     batch_zip = zip(batch_data['id'], batch_data['title'], batch_data['text'])
-    print(batch_data.keys())
     rows = [{'id': row[0], 'title': row[1], 'text': row[2]}
             for row in batch_zip]
     input_texts = [f"{prefix}{row['title']}\n{row['text']}" for row in rows]

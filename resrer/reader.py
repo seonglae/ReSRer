@@ -45,7 +45,7 @@ def get_reader(model_id="facebook/dpr-reader-multiset-base", device="cuda"):
 
 # OpenAI readrer
 async def ask_openai_single(model, question: str, ctx: str) -> AnswerInfo:
-  system = 'User question Instructions: Extract noun answer for question from context under 5 words. You must extract answer from a context at most 8 words.'
+  system = 'User question Instructions: Extract noun answer for question from context under 3 words. You must extract answer from a context at most 8 words.'
   user = f'question: {question}\ncontext: {ctx}'
   while True:
     try:
