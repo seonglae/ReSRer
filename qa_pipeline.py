@@ -32,7 +32,7 @@ def evaluate():
 def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open', device='cuda',
             encoder='dpr', split='validation', summarizer='seonglae/resrer-bart-base',
             reader="facebook/dpr-reader-multiset-base", ratio: int = 1, stream: bool = False,
-            milvus_user='resrer', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
+            milvus_user='root', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
             collection_name='dpr_nq', db_name="psgs_w100", token=config['HF_TOKEN'], batch_size=30, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
@@ -157,7 +157,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
 
 
 @torch.inference_mode()
-def chat(top_k=10, milvus_port='19530', milvus_user='resrer', milvus_host=config['MILVUS_HOST'],
+def chat(top_k=10, milvus_port='19530', milvus_user='root', milvus_host=config['MILVUS_HOST'],
          milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100", summarize=False) -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)

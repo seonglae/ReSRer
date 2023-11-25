@@ -1,10 +1,15 @@
 {
   "apps": [
     {
-      "name": "split",
+      "name": "counting",
       "script": "/root/ReSRer/use_tiktoken.py",
       "args": [
-        "count"
+        "count",
+        "--stream",
+        "--dataset_id",
+        "seonglae/wikipedia-256",
+        "--subset",
+        "gpt-4"
       ],
       "wait_ready": false,
       "autorestart": false,

@@ -1,12 +1,20 @@
 {
   "apps": [
     {
-      "name": "dataset",
+      "name": "indexing",
       "script": "/root/ReSRer/index_ctx.py",
       "args": [
         "dataset",
         "--streaem",
-        "--tei"
+        "--tei",
+        "--dataset_id",
+        "seonglae/wikipedia-256",
+        "--subset",
+        "gpt-4",
+        "--db_name",
+        "wikipedia_256",
+        "--collection_name",
+        "jina_v2"
       ],
       "wait_ready": false,
       "autorestart": false,

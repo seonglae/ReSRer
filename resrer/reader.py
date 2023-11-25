@@ -5,7 +5,7 @@ import asyncio
 import torch
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, DPRReaderTokenizer, DPRReader, logging
 from transformers import QuestionAnsweringPipeline
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APITimeoutError
 from dotenv import dotenv_values
 
 max_answer_len = 8
@@ -52,8 +52,9 @@ async def ask_openai_single(model, question: str, ctx: str) -> AnswerInfo:
       res = await client.chat.completions.create(messages=[
           {"role": "system", "content": system},
           {"role": "user", "content": user}
-      ], model=model, stream=False, max_tokens=20, timeout=5)
-    except Exception as _:
+      ], model=model, stream=False, max_tokens=20, timeout=5.0)
+    except APITimeoutError as _:
+      print('retry')
       continue
     return {"answer": str(res.choices[0].message.content), "score": 0, "start": 0, "end": 0}
 
