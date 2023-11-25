@@ -6,7 +6,8 @@
       "args": [
         "split",
         "--split",
-        "256"
+        "256",
+        "--stream"
       ],
       "wait_ready": false,
       "autorestart": false,

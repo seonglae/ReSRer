@@ -9,8 +9,8 @@ from resrer.utils import split_token, Row
 
 config = dotenv_values()
 
-def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=True,
-          batch_size=5000, token=config['HF_TOKEN'], user='seonglae', split=512):
+def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=False,
+          batch_size=5000, token=config['HF_TOKEN'], user='seonglae', split=256):
   encoder = tiktoken.encoding_for_model(target)
 
   # Load dataset
@@ -27,7 +27,7 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
     input_texts = [f"{row['title']}\n{row['text']}" for row in rows]
     dict_list.extend(split_token(encoder, rows, input_texts, split=split))
     print(
-        f"Batched {len(batch_data['id'])}rows takes ({time.time() - start:.2f}s)")
+        f"{len(dict_list)}rows ({time.time() - start:.2f}s)")
     return {'query': input_texts}
 
   # Batch processing
@@ -42,7 +42,7 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
   return 'done'
 
 
-def count(dataset_id="wiki_dpr",  target='gpt-4', subset='psgs_w100.nq.no_index.no_embeddings', stream=True,
+def count(dataset_id="wiki_dpr",  target='gpt-4', subset='psgs_w100.nq.no_index.no_embeddings', stream=False,
           batch_size=5000, token=config['HF_TOKEN'], user='seonglae'):
   encoder = tiktoken.encoding_for_model(target)
 
