@@ -30,7 +30,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
     text = FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=int(max_text))
     vec = FieldSchema(name="vec", dtype=DataType.FLOAT_VECTOR, dim=dim)
     id_field = FieldSchema(name="id", dtype=DataType.VARCHAR,
-                           is_primary=True, max_length=8)
+                           is_primary=True, max_length=16)
     schema = CollectionSchema(
         fields=[id_field, vec, title, text], enable_dynamic_field=True)
     index_params = {
