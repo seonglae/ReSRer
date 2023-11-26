@@ -18,7 +18,7 @@ def split_token(encoder: Encoding, rows: List[Row], input_texts: List[str], spli
     filtered_texts.append(' '.join(words))
 
   # Batch documents
-  for i, text_tokenes in enumerate(encoder.encode_batch(input_texts)):
+  for i, text_tokenes in enumerate(encoder.encode_batch(filtered_texts)):
     row = rows[i]
     passages_count = int((len(text_tokenes) - 1) / split)
 

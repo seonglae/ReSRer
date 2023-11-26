@@ -43,7 +43,7 @@ def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=
 
 
 def count(dataset_id="wiki_dpr", target='gpt-4', subset='psgs_w100.nq.no_index.no_embeddings', stream=False,
-          batch_size=5000, token=config['HF_TOKEN'], user='seonglae'):
+          batch_size=10000, token=config['HF_TOKEN'], user='seonglae'):
   encoder = tiktoken.encoding_for_model(target)
 
   # Load dataset

@@ -14,7 +14,9 @@
         "--db_name",
         "wikipedia_256",
         "--collection_name",
-        "jina_v2"
+        "jina_v2",
+        "--max_text",
+        "16384"
       ],
       "wait_ready": false,
       "autorestart": false,

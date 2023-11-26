@@ -13,7 +13,7 @@ config = dotenv_values(".env")
 def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_PW'],
             prefix="", subset='psgs_w100.nq.no_index.no_embeddings', stream=False,
             milvus_host=config['MILVUS_HOST'], milvus_port='19530', dim=768,
-            db_name="psgs_w100", collection_name='jina_v2', tei=False,
+            db_name="psgs_w100", collection_name='jina_v2', tei=False, max_text=16384,
             tei_host="localhost", tei_port='8080', tei_protocol="http",
             batch_size=5000, start_index=None, end_index=None):
 
@@ -27,7 +27,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
                         uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
   if collection_name not in client.list_collections():
     title = FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=1024)
-    text = FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=8192)
+    text = FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=int(max_text))
     vec = FieldSchema(name="vec", dtype=DataType.FLOAT_VECTOR, dim=dim)
     id_field = FieldSchema(name="id", dtype=DataType.VARCHAR,
                            is_primary=True, max_length=8)
