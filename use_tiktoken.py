@@ -11,7 +11,7 @@ config = dotenv_values()
 
 
 def split(dataset_id="wikipedia",  target='gpt-4', subset='20220301.en', stream=False,
-          batch_size=5000, token=config['HF_TOKEN'], user='seonglae', split=256):
+          batch_size=10000, token=config['HF_TOKEN'], user='seonglae', split=256):
   encoder = tiktoken.encoding_for_model(target)
 
   # Load dataset
@@ -140,11 +140,6 @@ def count(dataset_id="wiki_dpr", target='gpt-4', subset='psgs_w100.nq.no_index.n
   for _ in batched:
     continue
 
-  # Upload to HuggingFace Hub
-  if token is not None:
-    Dataset.from_list(dict_list).push_to_hub(config_name=target,
-                                             token=token, repo_id=f'{user}/{dataset_id}_token')
-
   print("Token count", token_map)
   print("Text count", char_map)
   total = sum(token_map.values())
@@ -152,6 +147,12 @@ def count(dataset_id="wiki_dpr", target='gpt-4', subset='psgs_w100.nq.no_index.n
   char_percent = {k: f'{v * 100 / total:.2f}%' for k, v in char_map.items()}
   print("Token percent", token_percent)
   print("Text percent", char_percent)
+
+  # Upload to HuggingFace Hub
+  if token is not None:
+    repo_id = f'{dataset_id.split("/")[1]}-token' if '/' in dataset_id else f'{user}/{dataset_id}-token'
+    Dataset.from_list(dict_list).push_to_hub(config_name=target,
+                                             token=token, repo_id=repo_id)
   return token_percent, char_percent
 
 

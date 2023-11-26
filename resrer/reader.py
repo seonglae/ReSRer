@@ -45,14 +45,14 @@ def get_reader(model_id="facebook/dpr-reader-multiset-base", device="cuda"):
 
 # OpenAI readrer
 async def ask_openai_single(model, question: str, ctx: str) -> AnswerInfo:
-  system = 'User question Instructions: Extract noun answer for question from context under 3 words. You must extract answer from a context at most 8 words.'
+  system = 'question Instructions: Extract noun answer for question from context under 3 words. You must extract answer from a context at most 5 words.'
   user = f'question: {question}\ncontext: {ctx}'
   while True:
     try:
       res = await client.chat.completions.create(messages=[
           {"role": "system", "content": system},
           {"role": "user", "content": user}
-      ], model=model, stream=False, max_tokens=20, timeout=5.0)
+      ], model=model, stream=False, timeout=5.0)
     except APITimeoutError as _:
       print('retry')
       continue

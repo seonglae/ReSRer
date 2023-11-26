@@ -11,6 +11,11 @@ class Row(TypedDict):
 
 def split_token(encoder: Encoding, rows: List[Row], input_texts: List[str], split: int = 512) -> List[Row]:
   dict_list: List[Row] = []
+  filtered_texts = []
+  for input_text in input_texts:
+    words = input_text.split(' ')
+    words = list(filter(lambda word: len(word) < 1000, words))
+    filtered_texts.append(' '.join(words))
 
   # Batch documents
   for i, text_tokenes in enumerate(encoder.encode_batch(input_texts)):

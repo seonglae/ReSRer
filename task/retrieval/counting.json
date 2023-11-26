@@ -5,7 +5,6 @@
       "script": "/root/ReSRer/use_tiktoken.py",
       "args": [
         "count",
-        "--stream",
         "--dataset_id",
         "seonglae/wikipedia-256",
         "--subset",
