@@ -16,7 +16,9 @@
         "--collection_name",
         "jina_v2",
         "--max_text",
-        "16384"
+        "16384",
+        "--tei_port",
+        "8080"
       ],
       "wait_ready": false,
       "autorestart": false,
