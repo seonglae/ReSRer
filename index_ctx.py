@@ -14,7 +14,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
             prefix="", subset='psgs_w100.nq.no_index.no_embeddings', stream=False,
             milvus_host=config['MILVUS_HOST'], milvus_port='19530', dim=768,
             db_name="psgs_w100", collection_name='jina_v2', tei=False, max_text=16384,
-            tei_host="localhost", tei_port='8080', tei_protocol="http",
+            tei_host="localhost", tei_port='8080', tei_protocol="http", split="train",
             batch_size=5000, start_index=None, end_index=None):
 
   # Load DB
@@ -42,7 +42,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
     print(collection_info)
 
   # Load dataset
-  dataset = load_dataset(dataset_id, subset, streaming=stream)['train']
+  dataset = load_dataset(dataset_id, subset, streaming=stream)[split]
   if not stream and end_index is not None:
     dataset = dataset[:int(end_index)]
     dataset = Dataset.from_dict(dataset)

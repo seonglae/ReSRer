@@ -18,7 +18,9 @@
         "--max_text",
         "16384",
         "--tei_port",
-        "8080"
+        "8080",
+        "--split",
+        "train[10630000:]"
       ],
       "wait_ready": false,
       "autorestart": false,
