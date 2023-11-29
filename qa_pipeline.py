@@ -2,7 +2,6 @@ import time
 import random
 from typing import Dict, List
 
-import requests
 import fire
 import torch
 from pymilvus import MilvusClient, connections
@@ -11,23 +10,10 @@ from datasets import load_dataset, Dataset
 from tei import TEIClient
 
 from dpr.embedding import encode_dpr_question, get_dpr_encoder
-from resrer.eval import evaluate_dataset
 from resrer.reader import ask_reader, get_reader, ask_openai
 from resrer.summarizer import summarize_text, get_summarizer
 
 config = dotenv_values(".env")
-
-
-@torch.inference_mode()
-def evaluate(token=config['HF_TOKEN'], dataset='seonglae/nq_open-validation'):
-  headers = {"Authorization": f"Bearer {token}"}
-  url = f"https://datasets-server.huggingface.co/splits?dataset={dataset}"
-  response = requests.get(url, headers=headers, timeout=10)
-  data = response.json()
-  for split in data['splits']:
-    result = evaluate_dataset(dataset, split['config'])
-    print(f"{split['config']}: {result}")
-  return 'Done'
 
 
 @torch.inference_mode()

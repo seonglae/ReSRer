@@ -12,9 +12,9 @@
         "--reader",
         "facebook/dpr-reader-multiset-base",
         "--encoder",
-        "tei",
+        "dpr",
         "--collection_name",
-        "jina_v2",
+        "dpr_nq",
         "--db_name",
         "psgs_w100"
       ],
