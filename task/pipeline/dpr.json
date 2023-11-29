@@ -1,0 +1,27 @@
+{
+  "apps": [
+    {
+      "name": "dpr",
+      "script": "/root/ReSRer/qa_pipeline.py",
+      "args": [
+        "dataset",
+        "--top_k",
+        "1",
+        "--batch_size",
+        "32",
+        "--reader",
+        "facebook/dpr-reader-multiset-base",
+        "--encoder",
+        "tei",
+        "--collection_name",
+        "jina_v2",
+        "--db_name",
+        "psgs_w100"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    }
+  ]
+}

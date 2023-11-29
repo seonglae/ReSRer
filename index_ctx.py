@@ -27,7 +27,8 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
                         uri=f"http://{milvus_host}:{milvus_port}", db_name=db_name)
   if collection_name not in client.list_collections():
     title = FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=1024)
-    text = FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=int(max_text))
+    text = FieldSchema(name="text", dtype=DataType.VARCHAR,
+                       max_length=int(max_text))
     vec = FieldSchema(name="vec", dtype=DataType.FLOAT_VECTOR, dim=dim)
     id_field = FieldSchema(name="id", dtype=DataType.VARCHAR,
                            is_primary=True, max_length=16)
@@ -42,7 +43,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
     print(collection_info)
 
   # Load dataset
-  dataset = load_dataset(dataset_id, subset, streaming=stream)[split]
+  dataset = load_dataset(dataset_id, subset, streaming=stream, split=split)
   if not stream and end_index is not None:
     dataset = dataset[:int(end_index)]
     dataset = Dataset.from_dict(dataset)

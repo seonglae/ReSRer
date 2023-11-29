@@ -2,11 +2,13 @@ import time
 import random
 from typing import Dict, List
 
+import requests
 import fire
 import torch
 from pymilvus import MilvusClient, connections
 from dotenv import dotenv_values
 from datasets import load_dataset, Dataset
+from tei import TEIClient
 
 from dpr.embedding import encode_dpr_question, get_dpr_encoder
 from resrer.eval import evaluate_dataset
@@ -17,21 +19,22 @@ config = dotenv_values(".env")
 
 
 @torch.inference_mode()
-def evaluate():
-  raw = evaluate_dataset('seonglae/nq_open-validation',
-                         'psgs_w100.dpr_nq.1_gpt-3.5-turbo')
-  summarized = evaluate_dataset('seonglae/nq_open-validation',
-                                'psgs_w100.dpr_nq.10_resrer-bart-base.1_gpt-3.5-turbo')
-
-  result = f"Raw: {raw}\n"
-  result += f"Summarized: {summarized}\n"
-  return result
+def evaluate(token=config['HF_TOKEN'], dataset='seonglae/nq_open-validation'):
+  headers = {"Authorization": f"Bearer {token}"}
+  url = f"https://datasets-server.huggingface.co/splits?dataset={dataset}"
+  response = requests.get(url, headers=headers, timeout=10)
+  data = response.json()
+  for split in data['splits']:
+    result = evaluate_dataset(dataset, split['config'])
+    print(f"{split['config']}: {result}")
+  return 'Done'
 
 
 @torch.inference_mode()
 def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open', device='cuda',
             encoder='dpr', split='validation', summarizer='seonglae/resrer-bart-base',
             reader="facebook/dpr-reader-multiset-base", ratio: int = 1, stream: bool = False,
+            tei_host="localhost", tei_port='8080', tei_protocol="http",
             milvus_user='root', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
             collection_name='dpr_nq', db_name="psgs_w100", token=config['HF_TOKEN'], batch_size=30, user='seonglae') -> str:
   connections.connect(
@@ -44,6 +47,8 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
   # Load models
   if encoder == 'dpr':
     encoder_tokenizer, encoder_model = get_dpr_encoder(device=device)
+  elif encoder == 'tei':
+    teiclient = TEIClient(host=tei_host, port=tei_port, protocol=tei_protocol)
   if 'gpt' not in reader:
     reader_tokenizer, reader_model = get_reader(reader, device=device)
   if summarize:
@@ -77,6 +82,8 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
       question_vectors = encode_dpr_question(
           encoder_tokenizer, encoder_model, questions)
       question_vectors = question_vectors.detach().cpu().numpy().tolist()
+    elif encoder == 'tei':
+      question_vectors = teiclient.embed_batch_sync(questions)
     print(f"({time.time() - start:.2f}s): encoding")
 
     # Retriever
