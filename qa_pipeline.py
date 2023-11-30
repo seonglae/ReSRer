@@ -19,8 +19,8 @@ config = dotenv_values(".env")
 @torch.inference_mode()
 def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_open', device='cuda',
             encoder='dpr', split='validation', summarizer='seonglae/resrer-bart-base',
-            reader="facebook/dpr-reader-multiset-base", ratio: int = 1, stream: bool = False,
-            tei_host="localhost", tei_port='8080', tei_protocol="http",
+            reader="facebook/dpr-reader-single-nq-base", ratio: int = 1, stream: bool = False,
+            tei_host="localhost", tei_port='8080', tei_protocol="http", special_token=False,
             milvus_user='root', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
             collection_name='dpr_nq', db_name="psgs_w100", token=config['HF_TOKEN'], batch_size=30, user='seonglae') -> str:
   connections.connect(
@@ -66,7 +66,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     start = time.time()
     if encoder == 'dpr':
       question_vectors = encode_dpr_question(
-          encoder_tokenizer, encoder_model, questions)
+          encoder_tokenizer, encoder_model, questions, device=device)
       question_vectors = question_vectors.detach().cpu().numpy().tolist()
     elif encoder == 'tei':
       question_vectors = teiclient.embed_batch_sync(questions)
@@ -83,21 +83,24 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     psgs_list: List[List[str]] = []
     for psgs in results:
       psgs_list.append([psg['entity']['text'] for psg in psgs])
+    sep = '<sep>' if special_token else '\n'
     ctxs = ['\n'.join(psgs) for psgs in psgs_list]
     print(f"({time.time() - start:.2f}s): retrieval")
 
     # Summarizer
     summaries: List[str] = []
     if summarize:
+      input_texts = [questions[i] + sep + '\n'.join(psgs)
+                     for i, psgs in enumerate(psgs_list)]
       start = time.time()
       if ratio == 1:
         # Memory bound to batch_size
         summaries.extend(summarize_text(
-            summarizer_tokenizer, summarizer_model, ctxs, device=device))
+            summarizer_tokenizer, summarizer_model, input_texts, device=device))
       else:
         # Memory bound to ratio
         summary_ctxs: List[str] = []
-        for i, ctx in enumerate(ctxs):
+        for i, ctx in enumerate(input_texts):
           random.seed(ctx)
           random.shuffle(psgs_list[i])
           chunk_size = len(psgs_list[i]) // ratio

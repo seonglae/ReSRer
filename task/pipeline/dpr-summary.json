@@ -1,12 +1,12 @@
 {
   "apps": [
     {
-      "name": "dpr",
+      "name": "dpr-summary",
       "script": "/root/ReSRer/qa_pipeline.py",
       "args": [
         "dataset",
         "--top_k",
-        "1",
+        "4",
         "--batch_size",
         "32",
         "--reader",
@@ -15,10 +15,13 @@
         "dpr",
         "--collection_name",
         "dpr_nq",
-        "--db_name",
-        "psgs_w100",
+        "--summarize",
+        "--summarizer",
+        "seonglae/resrer-bart",
         "--device",
-        "1"
+        "0",
+        "--db_name",
+        "psgs_w100"
       ],
       "wait_ready": false,
       "autorestart": false,

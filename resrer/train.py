@@ -38,7 +38,7 @@ def training(output, dataset_id, checkpoint, batch_size=4, special_token=False,
   print(tokenized_dataset)
 
   # Train
-  model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
+  model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint, min_length=256, max_length=512)
   # Separator Token
   if special_token:
     tokenizer.add_tokens(['<sep>'])
