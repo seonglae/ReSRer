@@ -1,0 +1,27 @@
+{
+  "apps": [
+    {
+      "name": "train",
+      "script": "/root/ReSRer/train.py",
+      "args": [
+        "--output",
+        "seonglae/resrer-bart",
+        "--dataset_id",
+        "seonglae/resrer-nq",
+        "--checkpoint",
+        "facebook/bart-base",
+        "--batch_size",
+        "4",
+        "--epochs",
+        "8"
+      ],
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "0"
+      },
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    }
+  ]
+}
