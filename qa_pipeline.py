@@ -10,7 +10,7 @@ from datasets import load_dataset, Dataset
 from tei import TEIClient
 
 from dpr.embedding import encode_dpr_question, get_dpr_encoder
-from resrer.reader import ask_reader, get_reader, ask_openai
+from resrer.reader import ask_reader, get_reader, ask_openai, ask_dpr_reader
 from resrer.summarizer import summarize_text, get_summarizer
 
 config = dotenv_values(".env")
@@ -83,13 +83,13 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     psgs_list: List[List[str]] = []
     for psgs in results:
       psgs_list.append([psg['entity']['text'] for psg in psgs])
-    sep = '<sep>' if special_token else '\n'
     ctxs = ['\n'.join(psgs) for psgs in psgs_list]
     print(f"({time.time() - start:.2f}s): retrieval")
 
     # Summarizer
     summaries: List[str] = []
     if summarize:
+      sep = '<sep>' if special_token else '\n'
       input_texts = [questions[i] + sep + '\n'.join(psgs)
                      for i, psgs in enumerate(psgs_list)]
       start = time.time()
@@ -119,8 +119,12 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
       predicts = ask_openai(
           reader, questions, summaries if summarize else ctxs)
     else:
-      predicts = ask_reader(reader_tokenizer, reader_model,
-                            questions, summaries if summarize else ctxs, device=device)
+      if 'dpr' in reader and not summarize:
+        predicts = ask_dpr_reader(reader_tokenizer, reader_model,
+                              questions, psgs_list, device=device)
+      else:
+        predicts = ask_reader(reader_tokenizer, reader_model,
+                              questions, summaries if summarize else ctxs, device=device)
     print(f"({time.time() - start:.2f}s): reading")
 
     for i, question in enumerate(questions):

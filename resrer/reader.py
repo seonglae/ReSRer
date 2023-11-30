@@ -16,10 +16,33 @@ client = AsyncOpenAI(api_key=config['OPENAI_API_KEY'],)
 
 
 class AnswerInfo(TypedDict):
-  score: Optional[float]
+  score: float
   start: Optional[int]
   end: Optional[int]
   answer: str
+
+
+@torch.inference_mode()
+def ask_dpr_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering,
+                   questions: List[str], psgs: List[List[str]], device='cuda') -> List[AnswerInfo]:
+  top_k = len(psgs[0])
+  answer_candidates = []
+  for i in range(top_k):
+    psgs_list = [psg[i] for psg in psgs]
+    ctxs = ['\n'.join(psgs) for psgs in psgs_list]
+    with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False):
+      pipeline = QuestionAnsweringPipeline(
+          model=model, tokenizer=tokenizer, device=device, max_answer_len=max_answer_len)
+      answer_infos: List[AnswerInfo] = pipeline(
+          question=questions, context=ctxs)
+    if not isinstance(answer_infos, list):
+      answer_infos = [answer_infos]
+    for answer_info in answer_infos:
+      answer_info['answer'] = sub(r'[.\(\)"\',]', '', answer_info['answer'])
+    answer_candidates.append(answer_infos)
+  answer_infos = [max((answer_candidates[k][i]
+                      for k in range(top_k)), key=lambda a: a['score']) for i in range(len(psgs))]
+  return answer_infos
 
 
 @torch.inference_mode()

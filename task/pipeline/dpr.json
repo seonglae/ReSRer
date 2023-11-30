@@ -6,7 +6,7 @@
       "args": [
         "dataset",
         "--top_k",
-        "1",
+        "10",
         "--batch_size",
         "32",
         "--reader",
