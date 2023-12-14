@@ -12,6 +12,12 @@ cd ReSRer
 rye sync
 # or
 pip insatll .
+# for training
+pip install git+https://github.com/NVIDIA/TransformerEngine.git@stable
+pip install --force-reinstall typing-extensions==4.5.0
+pip uninstall deepspeed
+pip install deepspeed
+pip uninstall -y apex
 ```
 
 ### 2. create .env

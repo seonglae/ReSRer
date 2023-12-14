@@ -12,10 +12,10 @@ def preprocesser(tokenizer, special_token=False):
   def preprocess_function(examples):
     if special_token:
       inputs = [f"{examples['question_text'][i]}<sep>{doc}" for i,
-                doc in enumerate(examples["document_text"])]
+                doc in enumerate(examples["document_text"]) if examples['answer_exist_chunk']]
     else:
       inputs = [f"{examples['question_text'][i]}\n{doc}" for i,
-                doc in enumerate(examples["document_text"])]
+                doc in enumerate(examples["document_text"]) if examples['answer_exist_chunk']]
     model_inputs = tokenizer(inputs, truncation=True)
     labels = tokenizer(
         text_target=examples["summarization_text"], truncation=True)
@@ -38,7 +38,8 @@ def training(output, dataset_id, checkpoint, batch_size=4, special_token=False,
   print(tokenized_dataset)
 
   # Train
-  model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint, min_length=256, max_length=512)
+  model = AutoModelForSeq2SeqLM.from_pretrained(
+      checkpoint, min_length=256, max_length=512)
   # Separator Token
   if special_token:
     tokenizer.add_tokens(['<sep>'])

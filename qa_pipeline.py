@@ -99,6 +99,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
             summarizer_tokenizer, summarizer_model, input_texts, device=device))
       else:
         # Memory bound to ratio
+        # TODO: multi dpr read mapping & question prefix
         summary_ctxs: List[str] = []
         for i, ctx in enumerate(input_texts):
           random.seed(ctx)
