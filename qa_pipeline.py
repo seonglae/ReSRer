@@ -22,7 +22,8 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
             reader="facebook/dpr-reader-single-nq-base", ratio: int = 1, stream: bool = False,
             tei_host="localhost", tei_port='8080', tei_protocol="http", special_token=False,
             milvus_user='root', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
-            collection_name='dpr_nq', db_name="psgs_w100", token=config['HF_TOKEN'], batch_size=30, user='seonglae') -> str:
+            collection_name='dpr_nq', db_name="psgs_w100", token=config['HF_TOKEN'],
+            batch_size=30, user='seonglae') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,

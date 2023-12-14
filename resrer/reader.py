@@ -29,19 +29,23 @@ def ask_dpr_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswerin
   answer_candidates = []
   for i in range(top_k):
     psgs_list = [psg[i] for psg in psgs]
-    ctxs = ['\n'.join(psgs) for psgs in psgs_list]
-    with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False):
+    with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=True):
       pipeline = QuestionAnsweringPipeline(
           model=model, tokenizer=tokenizer, device=device, max_answer_len=max_answer_len)
       answer_infos: List[AnswerInfo] = pipeline(
-          question=questions, context=ctxs)
+          question=questions, context=psgs_list)
     if not isinstance(answer_infos, list):
       answer_infos = [answer_infos]
+
+    # Remove special tokens for DPR reader
     for answer_info in answer_infos:
       answer_info['answer'] = sub(r'[.\(\)"\',]', '', answer_info['answer'])
     answer_candidates.append(answer_infos)
+
+  # Select best answer
   answer_infos = [max((answer_candidates[k][i]
                       for k in range(top_k)), key=lambda a: a['score']) for i in range(len(psgs))]
+  print(answer_infos[0])
   return answer_infos
 
 

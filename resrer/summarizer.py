@@ -9,7 +9,7 @@ def summarize_text(tokenizer: Union[PegasusTokenizerFast, BartTokenizerFast],
                    input_texts: List[str], device="cuda"):
   inputs = tokenizer(input_texts, padding=True,
                      return_tensors='pt', truncation=True).to(device)
-  with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False):
+  with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=True):
     summary_ids = model.generate(inputs["input_ids"])
   summaries = tokenizer.batch_decode(summary_ids, skip_special_tokens=True,
                                      clean_up_tokenization_spaces=False, batch_size=len(input_texts))
