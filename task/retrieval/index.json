@@ -1,0 +1,26 @@
+{
+  "apps": [
+    {
+      "name": "index",
+      "script": "/root/ReSRer/index_ctx.py",
+      "args": [
+        "dataset",
+        "--streaem",
+        "--dataset_id",
+        "wiki_dpr",
+        "--subset",
+        "psgs_w100.nq.no_index.no_embeddings",
+        "--db_name",
+        "psgs_w100",
+        "--collection_name",
+        "dpr_nq",
+        "--max_text",
+        "16384"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    }
+  ]
+}

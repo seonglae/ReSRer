@@ -11,12 +11,12 @@
         "--checkpoint",
         "facebook/bart-base",
         "--batch_size",
-        "4",
+        "8",
         "--epochs",
-        "8"
+        "2"
       ],
       "env": {
-        "CUDA_VISIBLE_DEVICES": "0"
+        "CUDA_VISIBLE_DEVICES": "0,1"
       },
       "wait_ready": false,
       "autorestart": false,
