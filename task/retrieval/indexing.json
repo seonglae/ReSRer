@@ -5,7 +5,7 @@
       "script": "/root/ReSRer/index_ctx.py",
       "args": [
         "dataset",
-        "--streaem",
+        "--stream",
         "--tei",
         "--dataset_id",
         "seonglae/wikipedia-256",
