@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "index",
+      "name": "disk",
       "script": "/root/ReSRer/index_ctx.py",
       "args": [
         "dataset",
@@ -12,11 +12,13 @@
         "--db_name",
         "psgs_w100",
         "--collection_name",
-        "dpr_nq",
+        "dpr_nq_disk",
         "--max_text",
         "16384",
         "--split",
-        "train[18010000:]"
+        "train",
+        "--type",
+        "diskann"
       ],
       "wait_ready": false,
       "autorestart": false,

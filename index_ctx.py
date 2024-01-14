@@ -15,7 +15,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
             milvus_host=config['MILVUS_HOST'], milvus_port='19530', dim=768,
             db_name="psgs_w100", collection_name='dpr_nq', tei=False, max_text=16384,
             tei_host="localhost", tei_port='8080', tei_protocol="http", split="train",
-            batch_size=5000, start_index=None, end_index=None):
+            batch_size=5000, start_index=None, end_index=None, sleeptime=4, type='hnsw'):
 
   # Load DB
   connections.connect(
@@ -34,8 +34,11 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
                            is_primary=True, max_length=16)
     schema = CollectionSchema(
         fields=[id_field, vec, title, text], enable_dynamic_field=True)
-    index_params = {
-        'index_type': 'HNSW', 'params': {'M': 32, 'efConstruction': 512}, "metric_type": "IP"}
+    if type == 'hnsw':
+      index_params = {
+          'index_type': 'HNSW', 'params': {'M': 32, 'efConstruction': 512}, "metric_type": "IP"}
+    elif type == 'diskann':
+      index_params = {'index_type': 'DISKANN', "metric_type": "IP"}
     client.create_collection_with_schema(
         collection_name=collection_name, schema=schema, index_params=index_params)
     collection_info = client.describe_collection(
@@ -61,6 +64,10 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
     rows = [{'id': row[0], 'title': row[1], 'text': row[2]}
             for row in batch_zip]
     input_texts = [f"{prefix}{row['title']}\n{row['text']}" for row in rows]
+    print('before')
+    if not stream:
+      time.sleep(sleeptime)
+    print('after')
     if 'embeddings' in batch_data:
       embeddings = batch_data['embeddings']
     else:
