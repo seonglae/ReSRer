@@ -8,6 +8,9 @@ from transformers import QuestionAnsweringPipeline
 from openai import AsyncOpenAI, APITimeoutError
 from dotenv import dotenv_values
 
+from dpr.reader import get_best_spans
+from dpr.tensorizer import BertTensorizer
+
 max_answer_len = 8
 logging.set_verbosity_error()
 config = dotenv_values(".env")
@@ -45,6 +48,11 @@ def ask_dpr_reader(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswerin
   # Select best answer
   answer_infos = [max((answer_candidates[k][i]
                       for k in range(top_k)), key=lambda a: a['score']) for i in range(len(psgs))]
+  # tensorizer = BertTensorizer(tokenizer, 320)
+  # for k in range(top_k):
+  #   get_best_spans(tensorizer, [answer_candidates[k][i]['start'] for i in range(len(psgs))],
+  #                  [answer_candidates[k][i]['end'] for i in range(len(psgs))], tensorizer.text_to_tensor(
+  #       questions[0]), max_answer_len, 0, 0, top_spans=10)
   print(answer_infos[0])
   return answer_infos
 
