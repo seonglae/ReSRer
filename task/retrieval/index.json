@@ -16,7 +16,7 @@
         "--max_text",
         "16384",
         "--split",
-        "train[18010000:]"
+        "train"
       ],
       "wait_ready": false,
       "autorestart": false,

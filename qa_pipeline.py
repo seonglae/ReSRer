@@ -10,6 +10,7 @@ from datasets import load_dataset, Dataset
 from tei import TEIClient
 
 from dpr.embedding import encode_dpr_question, get_dpr_encoder
+from resrer.eval import evaluate_dataset
 from resrer.reader import ask_reader, get_reader, ask_openai, ask_dpr_reader
 from resrer.summarizer import summarize_text, get_summarizer
 
@@ -148,6 +149,8 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
   batched = qa_dataset.map(batch_qa, batched=True, batch_size=batch_size)
   for _ in batched:
     continue
+  evaluated = evaluate_dataset(Dataset.from_list(dict_list))
+  print(evaluated)
 
   # Upload to HuggingFace Hub
   if token is not None:

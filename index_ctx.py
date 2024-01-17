@@ -15,7 +15,7 @@ def dataset(dataset_id="wiki_dpr", milvus_user='root', milvus_pw=config['MILVUS_
             milvus_host=config['MILVUS_HOST'], milvus_port='19530', dim=768,
             db_name="psgs_w100", collection_name='dpr_nq', tei=False, max_text=16384,
             tei_host="localhost", tei_port='8080', tei_protocol="http", split="train",
-            batch_size=5000, start_index=None, end_index=None, sleeptime=4, type='hnsw'):
+            batch_size=5000, start_index=None, end_index=None, sleeptime=3, type='hnsw'):
 
   # Load DB
   connections.connect(

@@ -7,7 +7,7 @@ import pyarrow.parquet as pq
 from datasets import concatenate_datasets, Dataset
 from dotenv import dotenv_values
 
-from resrer.eval import evaluate_dataset
+from resrer.eval import evaluate_remote_dataset
 
 config = dotenv_values(".env")
 
@@ -21,7 +21,7 @@ def evaluate(token=config['HF_TOKEN'], dataset='seonglae/nq_open-validation', ma
     if match:
       if not re.match(match, split['config']):
         continue
-    result = evaluate_dataset(dataset, split['config'])
+    result = evaluate_remote_dataset(dataset, split['config'])
     print(f"{split['config']}: {result}")
   return 'Done'
 

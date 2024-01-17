@@ -5,20 +5,24 @@ import unicodedata
 
 
 from evaluate import evaluator, QuestionAnsweringEvaluator
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 
 
-def evaluate_dataset(id: str, subset: str, metric: str = 'squad_v2',
+def evaluate_remote_dataset(id: str, subset: str, metric: str = 'squad_v2',
                      question_col: str = 'question', context_col: str = 'retrieved', predict_col: str = 'predicted',
                      id_col: str = 'question', label_col: str = 'answer', labeling: bool = True):
+  return evaluate_dataset(load_dataset(id, subset), metric=metric, question_col=question_col,
+                       context_col=context_col, predict_col=predict_col,
+                       id_col=id_col, label_col=label_col, labeling=labeling)
+
+
+def evaluate_dataset(dataset: Dataset, metric: str = 'squad_v2',
+                  question_col: str = 'question', context_col: str = 'retrieved', predict_col: str = 'predicted',
+                  id_col: str = 'question', label_col: str = 'answer', labeling: bool = True):
   referee: QuestionAnsweringEvaluator = evaluator("question-answering")
   referee.PIPELINE_KWARGS["handle_impossible_answer"] = True
-
-  # Dataset
-  dataset = load_dataset(id, subset)
-  dataset_list = list(dataset['train'])
   metric_input, qa = referee.prepare_data(
-      dataset['train'], question_col, context_col, id_col, label_col)
+      dataset, question_col, context_col, id_col, label_col)
 
   # References
   if labeling:
@@ -30,7 +34,7 @@ def evaluate_dataset(id: str, subset: str, metric: str = 'squad_v2',
 
   # Prediction
   metric_input['predictions'] = []
-  for row in dataset_list:
+  for row in list(dataset):
     result = {
         'prediction_text': row[predict_col], 'id': row[id_col]}
     if metric == 'squad_v2':
