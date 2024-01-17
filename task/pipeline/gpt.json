@@ -6,13 +6,13 @@
       "args": [
         "dataset",
         "--top_k",
-        "1",
+        "4",
         "--batch_size",
         "4",
         "--reader",
         "gpt-3.5-turbo",
         "--split",
-        "validation[:200]"
+        "validation"
       ],
       "wait_ready": false,
       "autorestart": false,

@@ -1,24 +1,16 @@
 from typing import TypedDict, List, Optional
 from re import sub
-import asyncio
 
 import torch
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, DPRReaderTokenizer, DPRReader, logging
 from transformers import QuestionAnsweringPipeline
-from openai import AsyncOpenAI, APITimeoutError
-from dotenv import dotenv_values
 
 from dpr.reader import get_best_spans
 from dpr.tensorizer import BertTensorizer
+from resrer.utils import ask_openai
 
 max_answer_len = 8
 logging.set_verbosity_error()
-config = dotenv_values(".env")
-
-client = AsyncOpenAI(
-    api_key=config['OPENAI_API_KEY'], organization=config['OPENAI_ORG'])
-
-
 class AnswerInfo(TypedDict):
   score: float
   start: Optional[int]
@@ -79,28 +71,10 @@ def get_reader(model_id="facebook/dpr-reader-single-nq-base", device="cuda"):
   return tokenizer, model
 
 
-# OpenAI readrer
-async def ask_openai_single(model, question: str, ctx: str) -> AnswerInfo:
-  system = '''###Instruction###
-Extract concise noun answer from context for question under 3 words without prefix. You must extract answer from a context at most 5 words. You can think step by step and derive answer too. You don't need a prefix which indicate the type of answers before answer. Just print the shortest span of answer from the context.
+def ask_openai_reader(model, questions: List[str], ctxs: List[str]) -> List[AnswerInfo]:
+  system_prompt = '''###Instruction###
+Extract a concise noun-based answer from the provided context for the question. Your answer should be under three words and extracted directly from a context of no more than five words. You can analyze the context step by step to derive the answer. Avoid using prefixes that indicate the type of answer; simply present the shortest relevant answer span from the context.
 '''
-  user = f'###Question###{question}\n\n###Context###\n{ctx}'
-  while True:
-    try:
-      res = await client.chat.completions.create(messages=[
-          {"role": "system", "content": system},
-          {"role": "user", "content": user}
-      ], model=model, stream=False, timeout=5.0)
-    except APITimeoutError as _:
-      print('retry')
-      continue
-    return {"answer": str(res.choices[0].message.content), "score": 0, "start": 0, "end": 0}
-
-
-async def ask_openai_batch(model, questions: List[str], ctxs: List[str]) -> List[AnswerInfo]:
-  answers = await asyncio.gather(*[ask_openai_single(model, questions[i], ctx) for i, ctx in enumerate(ctxs)])
-  return answers
-
-
-def ask_openai(model, questions: List[str], ctxs: List[str]) -> List[AnswerInfo]:
-  return asyncio.run(ask_openai_batch(model, questions, ctxs))
+  user_prompts = [f'###Question###\n{q}\n\n###Context###\n{ctxs[i]}' for i, q in enumerate(questions)]
+  answers = ask_openai(model, system_prompt, user_prompts)
+  return [{'answer': a, 'score': 0, 'start': 0, 'end': 0} for a in answers]

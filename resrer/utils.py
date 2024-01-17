@@ -1,5 +1,9 @@
 from typing import TypedDict, List
+import asyncio
+
 from tiktoken import Encoding
+from openai import AsyncOpenAI, APITimeoutError
+from dotenv import dotenv_values
 
 
 class Row(TypedDict):
@@ -7,6 +11,34 @@ class Row(TypedDict):
   title: str
   url: str
   text: str
+
+
+config = dotenv_values(".env")
+client = AsyncOpenAI(
+    api_key=config['OPENAI_API_KEY'], organization=config['OPENAI_ORG'])
+
+
+# OpenAI readrer
+async def ask_openai_single(model, system_prompt: str, user_prompt: str) -> str:
+  while True:
+    try:
+      res = await client.chat.completions.create(messages=[
+          {"role": "system", "content": system_prompt},
+          {"role": "user", "content": user_prompt}
+      ], model=model, stream=False, timeout=5.0)
+    except APITimeoutError as _:
+      print('retry')
+      continue
+    return str(res.choices[0].message.content)
+
+
+async def ask_openai_batch(model, system_prompt: str, user_prompts: List[str]) -> List[str]:
+  answers = await asyncio.gather(*[ask_openai_single(model, system_prompt, u) for u in user_prompts])
+  return answers
+
+
+def ask_openai(model, system_prompt: str, user_prompts: List[str]) -> List[str]:
+  return asyncio.run(ask_openai_batch(model, system_prompt, user_prompts))
 
 
 def split_token(encoder: Encoding, rows: List[Row], input_texts: List[str], split: int = 512) -> List[Row]:

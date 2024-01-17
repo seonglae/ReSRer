@@ -11,7 +11,7 @@ from tei import TEIClient
 
 from dpr.embedding import encode_dpr_question, get_dpr_encoder
 from resrer.eval import evaluate_dataset
-from resrer.reader import ask_reader, get_reader, ask_openai, ask_dpr_reader
+from resrer.reader import ask_reader, get_reader, ask_openai_reader, ask_dpr_reader
 from resrer.summarizer import summarize_text, get_summarizer
 
 config = dotenv_values(".env")
@@ -119,7 +119,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     # Reader
     start = time.time()
     if 'gpt' in reader:
-      predicts = ask_openai(
+      predicts = ask_openai_reader(
           reader, questions, summaries if summarize else ctxs)
     else:
       if 'dpr' in reader and not summarize:
