@@ -15,7 +15,8 @@ max_answer_len = 8
 logging.set_verbosity_error()
 config = dotenv_values(".env")
 
-client = AsyncOpenAI(api_key=config['OPENAI_API_KEY'],)
+client = AsyncOpenAI(
+    api_key=config['OPENAI_API_KEY'], organization=config['OPENAI_ORG'])
 
 
 class AnswerInfo(TypedDict):
@@ -80,8 +81,10 @@ def get_reader(model_id="facebook/dpr-reader-single-nq-base", device="cuda"):
 
 # OpenAI readrer
 async def ask_openai_single(model, question: str, ctx: str) -> AnswerInfo:
-  system = 'question Instructions: Extract noun answer for question from context under 3 words. You must extract answer from a context at most 5 words.'
-  user = f'question: {question}\ncontext: {ctx}'
+  system = '''###Instruction###
+Extract concise noun answer from context for question under 3 words without prefix. You must extract answer from a context at most 5 words. You can think step by step and derive answer too. You don't need a prefix which indicate the type of answers before answer. Just print the shortest span of answer from the context.
+'''
+  user = f'###Question###{question}\n\n###Context###\n{ctx}'
   while True:
     try:
       res = await client.chat.completions.create(messages=[
