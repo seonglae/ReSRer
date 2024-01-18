@@ -1,19 +1,21 @@
 {
   "apps": [
     {
-      "name": "summarize-gpt",
+      "name": "sgpt4",
       "script": "/root/ReSRer/qa_pipeline.py",
       "args": [
         "dataset",
         "--top_k",
         "4",
         "--batch_size",
-        "8",
+        "4",
         "--reader",
         "gpt-3.5-turbo-1106",
         "--summarize",
         "--summarizer",
-        "gpt-3.5-turbo-1106"
+        "gpt-3.5-turbo-1106",
+        "--split",
+        "validation[:200]"
       ],
       "wait_ready": false,
       "autorestart": false,

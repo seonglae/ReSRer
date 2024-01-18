@@ -15,7 +15,8 @@ def summarize_text(tokenizer: Union[PegasusTokenizerFast, BartTokenizerFast],
     return gpt_summarize_text(summarizer, input_texts, questions)
 
   sep = '<sep>' if special_token else '\n'
-  input_texts = [questions[i] + sep + text for i, text in enumerate(input_texts)]
+  input_texts = [questions[i] + sep +
+                 text for i, text in enumerate(input_texts)]
   inputs = tokenizer(input_texts, padding=True,
                      return_tensors='pt', truncation=True).to(device)
   with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=True):
@@ -27,15 +28,18 @@ def summarize_text(tokenizer: Union[PegasusTokenizerFast, BartTokenizerFast],
 
 def gpt_summarize_text(model: str, input_texts: List[str], questions: List[str]) -> List[str]:
   system_prompt = '''###Instruction###
-You are a professional wikipedia writter.
-Your task is to rewrite the given document to be easier for the reader to answer the given question.
-The given document is a split of a article about the question topic.
-The document is split into multiple parts, and this is one of them.
-Do not make up information that is not in the document, and do not answer the question.
-It must be at least 400 words long.
+Rewrite the given passages to be easier for the reader answering the given question.
+The rewrited text should be half the total length of the original passages. Your response must be at least 200 words long.
+The given passages are related about the question topic.
+Use only information in the document.
+Reduce the noise unrelated to answer the question.
+Remove unrelated phrases and sentences to answer the question.
+Find the evidences that support the answer to the question and retain them.
+Print only the rewrited texts
+The final answer for this question is contained is the passages so maintain the exact span of answer smaller than 5 words.
 '''
   user_prompts = [
-      f'###Passages###\n{t}\n\n###Question###{questions[i]}' for i, t in enumerate(input_texts)]
+      f'###Question###{questions[i]}\n\n###Passages###\n{t}' for i, t in enumerate(input_texts)]
   return ask_openai(model, system_prompt, user_prompts)
 
 
@@ -43,7 +47,9 @@ def get_summarizer(model_id="seonglae/resrer-bart-base", device="cuda") -> Tuple
                                                                                        BartTokenizerFast],
                                                                                  Union[PegasusXForConditionalGeneration,
                                                                                        BartForConditionalGeneration]]:
-  if 'bart' in model_id:
+  if 'gpt' in model_id:
+    return None, None
+  elif 'bart' in model_id:
     tokenizer = BartTokenizerFast.from_pretrained(model_id)
     model = BartForConditionalGeneration.from_pretrained(
         model_id, min_length=256, max_length=512).to(device)

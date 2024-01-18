@@ -48,9 +48,12 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
   # Subset
   if summarize:
     reader_id = reader
+    summarizer_id = summarizer
     if '/' in reader:
       reader_id = reader.split('/')[1]
-    subset = f"{db_name}.{collection_name}.{top_k}_{summarizer.split('/')[1]}.{ratio}_{reader_id}"
+    if '/' in summarizer:
+      summarizer_id = summarizer.split('/')[1]
+    subset = f"{db_name}.{collection_name}.{top_k}_{summarizer_id}.{ratio}_{reader_id}"
   else:
     reader_id = reader
     if '/' in reader:
