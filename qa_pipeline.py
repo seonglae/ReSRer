@@ -91,28 +91,25 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     # Summarizer
     summaries: List[str] = []
     if summarize:
-      sep = '<sep>' if special_token else '\n'
-      input_texts = [questions[i] + sep + '\n'.join(psgs)
-                     for i, psgs in enumerate(psgs_list)]
       start = time.time()
       if ratio == 1:
         # Memory bound to batch_size
         summaries.extend(summarize_text(
-            summarizer_tokenizer, summarizer_model, input_texts, device=device))
+            summarizer_tokenizer, summarizer_model, psgs_list, summarizer, questions, device=device, special_token=special_token))
       else:
         # Memory bound to ratio
         # TODO: multi dpr read mapping & question prefix
-        summary_ctxs: List[str] = []
-        for i, ctx in enumerate(input_texts):
+        summary_ctxs: List[List[str]] = []
+        for i, ctx in enumerate(ctxs):
           random.seed(ctx)
           random.shuffle(psgs_list[i])
           chunk_size = len(psgs_list[i]) // ratio
           print(chunk_size)
           for j in range(chunk_size):
-            summary_ctxs.append('\n'.join(psgs_list[i][j*ratio:(j+1)*ratio]))
-          summary_ctxs.append('\n'.join(psgs_list[i][-ratio:]))
+            summary_ctxs.append(psgs_list[i][j*ratio:(j+1)*ratio])
+          summary_ctxs.append(psgs_list[i][-ratio:])
           chunk_summaries = summarize_text(
-              summarizer_tokenizer, summarizer_model, summary_ctxs, device=device)
+              summarizer_tokenizer, summarizer_model, summary_ctxs, summarizer, questions, device=device, special_token=special_token)
           summaries.append('\n'.join(chunk_summaries))
       print(f"({time.time() - start:.2f}s): summarizing")
 
@@ -124,7 +121,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     else:
       if 'dpr' in reader and not summarize:
         predicts = ask_dpr_reader(reader_tokenizer, reader_model,
-                              questions, psgs_list, device=device)
+                                  questions, psgs_list, device=device)
       else:
         predicts = ask_reader(reader_tokenizer, reader_model,
                               questions, summaries if summarize else ctxs, device=device)
@@ -163,7 +160,8 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
 
 @torch.inference_mode()
 def chat(top_k=10, milvus_port='19530', milvus_user='root', milvus_host=config['MILVUS_HOST'],
-         milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100", summarize=False) -> str:
+         milvus_pw=config['MILVUS_PW'], collection_name='dpr_nq', db_name="psgs_w100", summarize=False,
+         summarizer='seonglae/resrer-bart-base') -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
@@ -189,13 +187,12 @@ def chat(top_k=10, milvus_port='19530', milvus_user='root', milvus_host=config['
     results = client.search(collection_name=collection_name, data=[
         query_vector], limit=top_k, output_fields=['title', 'text'])
     texts = [result['entity']['text'] for result in results[0]]
-    ctx = '\n'.join(texts)
-    print(f"\nRetrieved: {ctx}")
+    print(f"\nRetrieved: {texts}")
 
     # Reader
     if summarize:
       summaries = summarize_text(
-          summarizer_tokenizer, summarizer_model, [f"{ctx}"])
+          summarizer_tokenizer, summarizer_model, texts, summarizer, [query])
       ctx = summaries[0]
       print(f"\nSummary: {ctx}")
     answers = ask_reader(reader_tokenizer, reader_model, [query], [ctx])

@@ -8,7 +8,7 @@
         "--top_k",
         "1",
         "--batch_size",
-        "6",
+        "4",
         "--reader",
         "gpt-3.5-turbo-1106",
         "--split",

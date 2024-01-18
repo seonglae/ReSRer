@@ -6,14 +6,14 @@
       "args": [
         "dataset",
         "--top_k",
-        "10",
+        "4",
         "--batch_size",
         "8",
         "--reader",
-        "gpt-3.5-turbo",
+        "gpt-3.5-turbo-1106",
         "--summarize",
         "--summarizer",
-        "seonglae/resrer-bart-base"
+        "gpt-3.5-turbo-1106"
       ],
       "wait_ready": false,
       "autorestart": false,

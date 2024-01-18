@@ -8,7 +8,14 @@ from resrer.utils import ask_openai
 
 def summarize_text(tokenizer: Union[PegasusTokenizerFast, BartTokenizerFast],
                    model: Union[PegasusXForConditionalGeneration, BartForConditionalGeneration],
-                   input_texts: List[str], device="cuda"):
+                   psgs_list: List[List[str]], summarizer: str, questions: List[str], device="cuda",
+                   special_token=False) -> List[str]:
+  input_texts = ['\n'.join(psgs) for psgs in psgs_list]
+  if 'gpt' in summarizer:
+    return gpt_summarize_text(summarizer, input_texts, questions)
+
+  sep = '<sep>' if special_token else '\n'
+  input_texts = [questions[i] + sep + text for i, text in enumerate(input_texts)]
   inputs = tokenizer(input_texts, padding=True,
                      return_tensors='pt', truncation=True).to(device)
   with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=True):
@@ -18,7 +25,7 @@ def summarize_text(tokenizer: Union[PegasusTokenizerFast, BartTokenizerFast],
   return summaries
 
 
-def gpt_summarize_text(model: str, input_texts: List[str], question: str):
+def gpt_summarize_text(model: str, input_texts: List[str], questions: List[str]) -> List[str]:
   system_prompt = '''###Instruction###
 You are a professional wikipedia writter.
 Your task is to rewrite the given document to be easier for the reader to answer the given question.
@@ -27,9 +34,9 @@ The document is split into multiple parts, and this is one of them.
 Do not make up information that is not in the document, and do not answer the question.
 It must be at least 400 words long.
 '''
-  user_prompts = [f'###Passages###\n{t}\n\n###Question###{question}' for t in input_texts]
-  answers = ask_openai(model, system_prompt, user_prompts)
-  return [{'answer': a, 'score': 0, 'start': 0, 'end': 0} for a in answers]
+  user_prompts = [
+      f'###Passages###\n{t}\n\n###Question###{questions[i]}' for i, t in enumerate(input_texts)]
+  return ask_openai(model, system_prompt, user_prompts)
 
 
 def get_summarizer(model_id="seonglae/resrer-bart-base", device="cuda") -> Tuple[Union[PegasusTokenizerFast,
