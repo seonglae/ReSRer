@@ -9,6 +9,8 @@ from evaluate import evaluator, QuestionAnsweringEvaluator
 from datasets import load_dataset, Dataset
 
 
+encoder = tiktoken.encoding_for_model('gpt-4')
+
 def exact_match(answers, prediction):
   return any((normalize_answer(answer) == normalize_answer(prediction) for answer in answers))
 
@@ -53,13 +55,14 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
   results = referee.compute_metric(metric_module, metric_inputs=metric_input)
 
   # Average tokens
-  ctxs: List[str] = dataset['summary'] if dataset['summary'][0] else dataset['retrieved']
-  encoder = tiktoken.encoding_for_model('gpt-4')
-  tokens = encoder.encode_batch(ctxs)
-  token_count = sum((len(token) for token in tokens)) / len(dataset)
-  results['tokens'] = token_count
+  tokens = encoder.encode_batch(dataset['retrieved'])
+  results['psgs_tokens'] = sum((len(token) for token in tokens)) / len(dataset)
+  if dataset['summary'][0]:
+    tokens = encoder.encode_batch(dataset['summary'])
+    results['summary_tokens'] = sum((len(token) for token in tokens)) / len(dataset)
 
   # Reader
+  ctxs: List[str] = dataset['summary'] if dataset['summary'][0] else dataset['retrieved']
   contains = [exact_contain(row['answer'], ctxs[i]) for i, row in enumerate(dataset)]
   matchs = [exact_match(row['answer'], row['predicted']) for row in dataset]
   # 틀렸는데 있는경우
@@ -87,6 +90,7 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
     sum_tp = [True for contain, retain in zip(contains, retains) if contain and retain]
     results['sum_precision'] = len(sum_tp) / (len(sum_tp) + len(sum_fp))
     results['sum_recall'] = len(sum_tp) / (len(sum_tp) + len(sum_fn))
+  print(len(dataset))
   return results
 
 
