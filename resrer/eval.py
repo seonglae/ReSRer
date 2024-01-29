@@ -11,6 +11,7 @@ from datasets import load_dataset, Dataset
 
 encoder = tiktoken.encoding_for_model('gpt-4')
 
+
 def exact_match(answers, prediction):
   return any((normalize_answer(answer) == normalize_answer(prediction) for answer in answers))
 
@@ -59,37 +60,46 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
   results['psgs_tokens'] = sum((len(token) for token in tokens)) / len(dataset)
   if dataset['summary'][0]:
     tokens = encoder.encode_batch(dataset['summary'])
-    results['summary_tokens'] = sum((len(token) for token in tokens)) / len(dataset)
-
-  # Reader
-  ctxs: List[str] = dataset['summary'] if dataset['summary'][0] else dataset['retrieved']
-  contains = [exact_contain(row['answer'], ctxs[i]) for i, row in enumerate(dataset)]
-  matchs = [exact_match(row['answer'], row['predicted']) for row in dataset]
-  # 틀렸는데 있는경우
-  reader_fp = [True for contain, match in zip(contains, matchs) if contain and not match]
-  results['reader_fp'] = len(reader_fp) / len(dataset)
-  # 없는데 맞춘경우
-  reader_fn = [True for contain, match in zip(contains, matchs) if not contain and match]
-  results['reader_fn'] = len(reader_fn) / len(dataset)
-  reader_tp = [True for contain, match in zip(contains, matchs) if contain and match]
-  results['reader_precision'] = len(reader_tp) / (len(reader_tp) + len(reader_fp))
-  results['reader_recall'] = len(reader_tp) / (len(reader_tp) + len(reader_fn))
+    results['summary_tokens'] = sum((len(token)
+                                    for token in tokens)) / len(dataset)
 
   # Summarizer
   if dataset['summary'][0]:
     contains = [exact_contain(row['answer'], row['retrieved'])
-              for row in dataset]
+                for row in dataset]
     retains = [exact_contain(row['answer'], row['summary'])
-                 for row in dataset]
-    # 없었는데 생긴 경구
-    sum_fp = [True for contain, retain in zip(contains, retains) if not contain and retain]
-    results['sum_fp'] = len(sum_fp) / len(dataset)
-    # 있었는데 없어진 경우
-    sum_fn = [True for contain, retain in zip(contains, retains) if contain and not retain]
-    results['sum_fn'] = len(sum_fn) / len(dataset)
-    sum_tp = [True for contain, retain in zip(contains, retains) if contain and retain]
-    results['sum_precision'] = len(sum_tp) / (len(sum_tp) + len(sum_fp))
-    results['sum_recall'] = len(sum_tp) / (len(sum_tp) + len(sum_fn))
+               for row in dataset]
+    contains_count = len(list(filter(lambda x: x, contains)))
+    retains_count = len(list(filter(lambda x: x, retains)))
+    # 답이 없었던 경우중 생긴 확률
+    sum_tn = [True for contain, retain in zip(
+        contains, retains) if not contain and retain]
+    results['sum_tn'] = len(sum_tn) / len(dataset) * 100
+    # 답이 있었던 경우중 없어진 확률
+    sum_fn = [True for contain, retain in zip(
+        contains, retains) if contain and not retain]
+
+    results['sum_fn'] = len(sum_fn) / len(dataset) * 100
+    results['ret_em'] = contains_count / len(dataset) * 100
+    results['sum_em'] = retains_count / len(dataset) * 100
+
+  # Reader
+  ctxs: List[str] = dataset['summary'] if dataset['summary'][0] else dataset['retrieved']
+  contains = [exact_contain(row['answer'], ctxs[i])
+              for i, row in enumerate(dataset)]
+  matches = [exact_match(row['answer'], row['predicted']) for row in dataset]
+  contains_count = len(list(filter(lambda x: x, contains)))
+  # 답이 있는 경우중 틀릴 확률
+  reader_fp = [True for contain, match in zip(
+      contains, matches) if contain and not match]
+  results['read_fp'] = len(reader_fp) / len(dataset) * 100
+  # 답이 없는 경우중 맞출 확률
+  reader_tn = [True for contain, match in zip(
+      contains, matches) if not contain and match]
+  results['read_tn'] = len(reader_tn) / len(dataset) * 100
+  if 'ret_em' not in results:
+    results['ret_em'] = contains_count / len(dataset) * 100
+
   print(len(dataset))
   return results
 

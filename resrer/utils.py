@@ -25,7 +25,7 @@ async def ask_openai_single(model, system_prompt: str, user_prompt: str) -> str:
       res = await client.chat.completions.create(messages=[
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": user_prompt}
-      ], model=model, stream=False, timeout=5.0)
+      ], model=model, stream=False, timeout=10.0)
     except APITimeoutError as _:
       print('retry')
       continue

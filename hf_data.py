@@ -11,13 +11,15 @@ from resrer.eval import evaluate_remote_dataset
 config = dotenv_values(".env")
 
 
-def evaluate(token=config['HF_TOKEN'], dataset='seonglae/nq_open-validation', contain=None):
+def evaluate(token=config['HF_TOKEN'], dataset='seonglae/nq_open-validation', contain=None, exclude=None):
   headers = {"Authorization": f"Bearer {token}"}
   url = f"https://datasets-server.huggingface.co/splits?dataset={dataset}"
   response = requests.get(url, headers=headers, timeout=10)
   data = response.json()
   for split in data['splits']:
-    if contain and contain not in split['config']:
+    if contain and str(contain) not in split['config']:
+      continue
+    if exclude and str(exclude) in split['config']:
       continue
     result = evaluate_remote_dataset(dataset, split['config'])
     print(f"{split['config']}: {result}")
