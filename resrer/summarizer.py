@@ -5,8 +5,33 @@ import torch
 
 from resrer.utils import ask_openai
 
+instructions = {
+  "v2": '''###Instruction###
+Rewrite the given passages to be easier for the reader answering the given question.
+The rewrited text should be half the total length of the original passages. Your response must be at least 200 words long.
+The given passages are related about the question topic.
+Use only information in the document.
+Reduce the noise unrelated to answer the question.
+Remove unrelated phrases and sentences to answer the question.
+Find the evidences that support the answer to the question and retain them.
+Print only the rewrited texts
+The final answer for this question is contained is the passages so maintain the exact span of answer smaller than 5 words.
+''',
+  "v4": '''###Instruction###
+The passages provided are related to the question.
+Make one or two bullet points given passages to be easier for the reader answering the given question.
+Make bullet points for each passages information that can be an evidence to answer the question.
+Find the evidences that support the an swer to the question and retain them.
+The rewrited text should be shorter than the total length of the original passages.
+Use only information in the document. Print only the rewrited texts
+Reduce the noise unrelated to answer the question. Remove unrelated phrases, sentences and information to answer the question.
+The final answer for this question is contained is the passages so maintain the exact span of answer smaller than 5 words.
+Maintain exact detailed information, not abstract them.
+'''
+}
 
 def summarize_text(tokenizer: Union[PegasusTokenizerFast, BartTokenizerFast],
+                   
                    model: Union[PegasusXForConditionalGeneration, BartForConditionalGeneration],
                    psgs_list: List[List[str]], summarizer: str, questions: List[str], device="cuda",
                    special_token=False) -> List[str]:
@@ -27,17 +52,11 @@ def summarize_text(tokenizer: Union[PegasusTokenizerFast, BartTokenizerFast],
 
 
 def gpt_summarize_text(model: str, input_texts: List[str], questions: List[str]) -> List[str]:
-  system_prompt = '''###Instruction###
-Rewrite the given passages to be easier for the reader answering the given question.
-The rewrited text should be half the total length of the original passages. Your response must be at least 200 words long.
-The given passages are related about the question topic.
-Use only information in the document.
-Reduce the noise unrelated to answer the question.
-Remove unrelated phrases and sentences to answer the question.
-Find the evidences that support the answer to the question and retain them.
-Print only the rewrited texts
-The final answer for this question is contained is the passages so maintain the exact span of answer smaller than 5 words.
-'''
+  version = model.split('.')[-1]
+  if version in instructions:
+    model = '.'.join(model.split('.')[:-1])
+
+  system_prompt = instructions[version]
   user_prompts = [
       f'###Question###{questions[i]}\n\n###Passages###\n{t}' for i, t in enumerate(input_texts)]
   return ask_openai(model, system_prompt, user_prompts)
@@ -59,5 +78,3 @@ def get_summarizer(model_id="seonglae/resrer-bart-base", device="cuda") -> Tuple
         model_id, min_length=256, max_length=512).to(device)
   model = torch.compile(model)
   return tokenizer, model
-
-# OpenAI summarizer
