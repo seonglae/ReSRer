@@ -78,7 +78,11 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
     # 답이 있었던 경우중 없어진 확률
     sum_fn = [True for contain, retain in zip(
         contains, retains) if contain and not retain]
+    # 원래 있던 것 중 원래 있는 확률
+    sum_tp = [True for contain, retain in zip(
+        contains, retains) if contain and retain]
 
+    results['sum_rc'] = len(sum_tp) / (contains_count) * 100
     results['sum_fn'] = len(sum_fn) / len(dataset) * 100
     results['ret_em'] = contains_count / len(dataset) * 100
     results['sum_em'] = retains_count / len(dataset) * 100
