@@ -1,8 +1,10 @@
 from typing import TypedDict, List
 import asyncio
+import time
 
 from tiktoken import Encoding
-from openai import AsyncOpenAI, APITimeoutError
+from openai import AsyncOpenAI
+from openai import APITimeoutError, Timeout, RateLimitError, APIError, APIConnectionError
 from dotenv import dotenv_values
 
 
@@ -25,9 +27,32 @@ async def ask_openai_single(model, system_prompt: str, user_prompt: str) -> str:
       res = await client.chat.completions.create(messages=[
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": user_prompt}
-      ], model=model, stream=False, timeout=10.0)
-    except APITimeoutError as _:
+      ], model=model, stream=False, timeout=20.0)
+
+    except APITimeoutError as e:
+      retry_time = e.retry_after if hasattr(e, "retry_after") else 30
+      print(f"Timeout error occurred. Retrying in {retry_time} seconds...")
       print('retry')
+      continue
+
+    except RateLimitError as e:
+      retry_time = e.retry_after if hasattr(e, "retry_after") else 30
+      print(f"Rate limit exceeded. Retrying in {retry_time} seconds...")
+      time.sleep(retry_time)
+      continue
+
+    except APIError as e:
+      retry_time = e.retry_after if hasattr(e, "retry_after") else 30
+      print(f"API error occurred. Retrying in {retry_time} seconds...")
+      time.sleep(retry_time)
+      continue
+
+    except OSError as e:
+      retry_time = 50  # Adjust the retry time as needed
+      print(
+          f"Connection error occurred: {e}. Retrying in {retry_time} seconds..."
+      )
+      time.sleep(retry_time)
       continue
     return str(res.choices[0].message.content)
 
