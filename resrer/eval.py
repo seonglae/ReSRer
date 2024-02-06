@@ -4,6 +4,7 @@ from typing import List
 
 import unicodedata
 import tiktoken
+import numpy as np
 
 from evaluate import evaluator, QuestionAnsweringEvaluator
 from datasets import load_dataset, Dataset
@@ -13,11 +14,23 @@ encoder = tiktoken.encoding_for_model('gpt-4')
 
 
 def exact_match(answers, prediction):
-  return any((normalize_answer(answer) == normalize_answer(prediction) for answer in answers))
+  """ Facebook DPR exact match metric.
+  https://github.com/facebookresearch/DPR/blob/main/train_extractive_reader.py#L253
+  Args:
+      answers (_type_): _description_
+      prediction (_type_): _description_
 
+  Returns:
+      _type_: _description_
+  """
+  if any((normalize(answer) == normalize(prediction) for answer in answers)):
+    return 1
+  if ',' in prediction:
+    return np.mean([float(any((normalize(answer) == normalize(p)) for answer in answers)) for p in prediction.split(',')])
+  return 0
 
 def exact_contain(answers, context):
-  return any((normalize_answer(answer) in normalize_answer(context) for answer in answers))
+  return any((normalize(answer) in normalize(context) for answer in answers))
 
 
 def evaluate_remote_dataset(id: str, subset: str, metric: str = 'squad', split='train',
@@ -86,12 +99,15 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
     results['sum_fn'] = len(sum_fn) / len(dataset) * 100
     results['ret_em'] = contains_count / len(dataset) * 100
     results['sum_em'] = retains_count / len(dataset) * 100
+  results['exact_match'] = np.mean(
+      [exact_match(row[label_col], row[predict_col]) for row in dataset]) * 100
 
   # Reader
   ctxs: List[str] = dataset['summary'] if dataset['summary'][0] else dataset['retrieved']
   contains = [exact_contain(row['answer'], ctxs[i])
               for i, row in enumerate(dataset)]
-  matches = [exact_match(row['answer'], row['predicted']) for row in dataset]
+  matches = [exact_match(row['answer'], row['predicted'])
+             != 0 for row in dataset]
   contains_count = len(list(filter(lambda x: x, contains)))
   # 답이 있는 경우중 틀릴 확률
   reader_fp = [True for contain, match in zip(
@@ -108,17 +124,7 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
   return results
 
 
-def evaluate_dataset_manual(id: str, subset: str):
-  dataset = load_dataset(id, subset)
-  dataset_list = list(dataset['train'])
-  for row in dataset_list:
-    row['score'] = max([regex_match_score(row['predicted'], answer)
-                       for answer in row['answer']])
-  score = sum([row['score'] for row in dataset_list]) / len(dataset_list)
-  return score
-
-
-def normalize_answer(s):
+def normalize(s: str):
   """Normalize answer."""
   s = unicodedata.normalize("NFD", s)
 
@@ -135,16 +141,3 @@ def normalize_answer(s):
   def lower(text):
     return text.lower()
   return white_space_fix(remove_articles(remove_punc(lower(s))))
-
-
-def exact_match_score(prediction, ground_truth):
-  return normalize_answer(prediction) == normalize_answer(ground_truth)
-
-
-def regex_match_score(prediction, ground_truth):
-  try:
-    regex = re.compile(ground_truth,
-                       flags=re.IGNORECASE + re.UNICODE + re.MULTILINE)
-    return regex.match(prediction) is not None
-  except re.error:
-    return False
