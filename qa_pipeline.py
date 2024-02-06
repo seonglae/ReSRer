@@ -24,7 +24,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
             tei_host="localhost", tei_port='8080', tei_protocol="http", special_token=False,
             milvus_user='root', milvus_host=config['MILVUS_HOST'], milvus_pw=config['MILVUS_PW'],
             collection_name='dpr_nq', db_name="psgs_w100", token=config['HF_TOKEN'],
-            batch_size=30, user='seonglae') -> str:
+            batch_size=30, user='seonglae', resummarize=None) -> str:
   connections.connect(
       host=milvus_host, port=milvus_port, user=milvus_user, password=milvus_pw)
   client = MilvusClient(user=milvus_user, password=milvus_pw,
@@ -60,36 +60,47 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
       reader_id = reader.split('/')[1]
     subset = f"{db_name}.{collection_name}.{top_k}_{reader_id}"
 
+  if resummarize:
+    base_dataset = load_dataset(f'{user}/{dataset}-validation', resummarize)['train']
+    if len(resummarize.split('^')) == 1:
+      subset = f'{resummarize}^2'
+    if len(resummarize.split('^')) == 2:
+      subset = f'{resummarize}^{int(resummarize.split("^")[1]) + 1}'
+
   # Batch processing function
-  def batch_qa(batch_data: Dict):
+  def batch_qa(batch_data: Dict, indices):
     batch_start = time.time()
     batch_zip = list(zip(batch_data['question'], batch_data['answer']))
     questions = [row[0] for row in batch_zip]
     answers = [row[1] for row in batch_zip]
 
-    # Embedding
-    start = time.time()
-    if encoder == 'dpr':
-      question_vectors = encode_dpr_question(
-          encoder_tokenizer, encoder_model, questions, device=device)
-      question_vectors = question_vectors.detach().cpu().numpy().tolist()
-    elif encoder == 'tei':
-      question_vectors = teiclient.embed_batch_sync(questions)
-    print(f"({time.time() - start:.2f}s): encoding")
+    if resummarize is None:
+      # Embedding
+      start = time.time()
+      if encoder == 'dpr':
+        question_vectors = encode_dpr_question(
+            encoder_tokenizer, encoder_model, questions, device=device)
+        question_vectors = question_vectors.detach().cpu().numpy().tolist()
+      elif encoder == 'tei':
+        question_vectors = teiclient.embed_batch_sync(questions)
+      print(f"({time.time() - start:.2f}s): encoding")
 
-    # Retriever
-    start = time.time()
-    if summarize:
-      limit = int(top_k) * ratio
+      # Retriever
+      start = time.time()
+      if summarize:
+        limit = int(top_k) * ratio
+      else:
+        limit = top_k
+      results = client.search(collection_name=collection_name,
+                              data=question_vectors, limit=limit, output_fields=['title', 'text'])
+      psgs_list: List[List[str]] = []
+      for psgs in results:
+        psgs_list.append([psg['entity']['text'] for psg in psgs])
+      ctxs = ['\n'.join(psgs) for psgs in psgs_list]
+      print(f"({time.time() - start:.2f}s): retrieval")
     else:
-      limit = top_k
-    results = client.search(collection_name=collection_name,
-                            data=question_vectors, limit=limit, output_fields=['title', 'text'])
-    psgs_list: List[List[str]] = []
-    for psgs in results:
-      psgs_list.append([psg['entity']['text'] for psg in psgs])
-    ctxs = ['\n'.join(psgs) for psgs in psgs_list]
-    print(f"({time.time() - start:.2f}s): retrieval")
+      ctxs = base_dataset[indices[0]:indices[-1] + 1]['summary']
+      psgs_list = [[ctx] for ctx in ctxs]
 
     # Summarizer
     summaries: List[str] = []
@@ -146,7 +157,7 @@ def dataset(top_k: int = 10, milvus_port='19530', summarize=False, dataset='nq_o
     return batch_data
 
   # Batch processing
-  batched = qa_dataset.map(batch_qa, batched=True, batch_size=batch_size)
+  batched = qa_dataset.map(batch_qa, batched=True, batch_size=batch_size, with_indices=True)
   for _ in batched:
     continue
   evaluated = evaluate_dataset(Dataset.from_list(dict_list))

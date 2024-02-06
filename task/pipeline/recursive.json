@@ -1,0 +1,26 @@
+{
+  "apps": [
+    {
+      "name": "sgpt10.v9^2",
+      "script": "/root/ReSRer/qa_pipeline.py",
+      "args": [
+        "dataset",
+        "--batch_size",
+        "1",
+        "--reader",
+        "gpt-3.5-turbo",
+        "--summarize",
+        "--summarizer",
+        "gpt-3.5-turbo.v9",
+        "--split",
+        "validation",
+        "--resummarize",
+        "psgs_w100.dpr_nq.10_gpt-3.5-turbo.v9.1_gpt-3.5-turbo"
+      ],
+      "wait_ready": false,
+      "autorestart": false,
+      "max_restarts": 5,
+      "interpreter": "/usr/bin/python"
+    }
+  ]
+}
