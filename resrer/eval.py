@@ -38,10 +38,10 @@ def exact_contain(answers, context):
 def evaluate_remote_dataset(data_id: str, subset: str, metric: str = 'squad', split='train', token=None,
                             question_col: str = 'question', context_col: str = 'retrieved', predict_col: str = 'predicted',
                             id_col: str = 'question', label_col: str = 'answer', labeling: bool = True,
-                            upload = False):
+                            upload = False, debug=False):
   dataset = load_dataset(data_id, subset)[split]
   score = evaluate_dataset(dataset, metric=metric, question_col=question_col,
-                          context_col=context_col, predict_col=predict_col,
+                          context_col=context_col, predict_col=predict_col, debug=debug,
                           id_col=id_col, label_col=label_col, labeling=labeling)
   if upload:
     def replace_score(row, index):
@@ -53,7 +53,7 @@ def evaluate_remote_dataset(data_id: str, subset: str, metric: str = 'squad', sp
 
 def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
                      question_col: str = 'question', context_col: str = 'retrieved', predict_col: str = 'predicted',
-                     id_col: str = 'question', label_col: str = 'answer', labeling: bool = True):
+                     id_col: str = 'question', label_col: str = 'answer', labeling: bool = True, debug = False):
   referee: QuestionAnsweringEvaluator = evaluator("question-answering")
   referee.PIPELINE_KWARGS["handle_impossible_answer"] = True
   metric_input, qa = referee.prepare_data(
@@ -95,15 +95,24 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
     contains_count = len(list(filter(lambda x: x, contains)))
     retains_count = len(list(filter(lambda x: x, retains)))
     # 답이 없었던 경우중 생긴 확률
-    sum_tn = [True for contain, retain in zip(
-        contains, retains) if not contain and retain]
+    sum_tn = [True for contain, retain in zip(contains, retains) if not contain and retain]
+    if debug:
+      for i, tn in enumerate([not contain and retain for contain, retain in zip(contains, retains)]):
+        if tn:
+          print('답이 없었던 경우중 생긴')
+          print(f"Q:{dataset['question'][i]}\nR:{dataset['retrieved'][i]}\nS:{dataset['summary'][i]}\nA:{dataset['answer'][i]}, P:{dataset['predicted'][i]}")
+          break
     results['sum_tn'] = len(sum_tn) / len(dataset) * 100
     # 답이 있었던 경우중 없어진 확률
-    sum_fn = [True for contain, retain in zip(
-        contains, retains) if contain and not retain]
+    sum_fn = [True for contain, retain in zip(contains, retains) if contain and not retain]
+    if debug:
+      for i, fn in enumerate([contain and not retain for contain, retain in zip(contains, retains)]):
+        if fn:
+          print('답이 있었던 경우중 없어진')
+          print(f"Q:{dataset['question'][i]}\nR:{dataset['retrieved'][i]}\nS:{dataset['summary'][i]}\nA:{dataset['answer'][i]}, P:{dataset['predicted'][i]}")
+          break
     # 원래 있던 것 중 원래 있는 확률
-    sum_tp = [True for contain, retain in zip(
-        contains, retains) if contain and retain]
+    sum_tp = [True for contain, retain in zip(contains, retains) if contain and retain]
 
     results['sum_rc'] = len(sum_tp) / (contains_count) * 100
     results['sum_fn'] = len(sum_fn) / len(dataset) * 100
@@ -120,12 +129,22 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
              != 0 for row in dataset]
   contains_count = len(list(filter(lambda x: x, contains)))
   # 답이 있는 경우중 틀릴 확률
-  reader_fp = [True for contain, match in zip(
-      contains, matches) if contain and not match]
+  reader_fp = [True for contain, match in zip(contains, matches) if contain and not match]
+  if debug:
+    for i, fp in enumerate([contain and not match for contain, match in zip(contains, matches)]):
+      if fp:
+        print('답이 있는 경우중 틀릴')
+        print(f"Q:{dataset['question'][i]}\nR:{dataset['retrieved'][i]}\nS:{dataset['summary'][i]}\nA:{dataset['answer'][i]}, P:{dataset['predicted'][i]}")
+        break
   results['read_fp'] = len(reader_fp) / len(dataset) * 100
   # 답이 없는 경우중 맞출 확률
-  reader_tn = [True for contain, match in zip(
-      contains, matches) if not contain and match]
+  reader_tn = [True for contain, match in zip(contains, matches) if not contain and match]
+  if debug:
+    for i, tn in enumerate([not contain and match for contain, match in zip(contains, matches)]):
+      if tn:
+        print('답이 없는 경우중 맞출')
+        print(f"Q:{dataset['question'][i]}\nR:{dataset['retrieved'][i]}\nS:{dataset['summary'][i]}\nA:{dataset['answer'][i]}, P:{dataset['predicted'][i]}")
+        break
   results['read_tn'] = len(reader_tn) / len(dataset) * 100
   if 'ret_em' not in results:
     results['ret_em'] = contains_count / len(dataset) * 100
