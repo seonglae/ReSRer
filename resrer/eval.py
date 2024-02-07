@@ -27,18 +27,28 @@ def exact_match(answers, prediction):
     return 1
   if ',' in prediction:
     return np.mean([float(any((normalize(answer) == normalize(p)) for answer in answers)) for p in prediction.split(',')])
+  if 'and' in prediction:
+    return np.mean([float(any((normalize(answer) == normalize(p)) for answer in answers)) for p in prediction.split('and')])
   return 0
 
 def exact_contain(answers, context):
   return any((normalize(answer) in normalize(context) for answer in answers))
 
 
-def evaluate_remote_dataset(id: str, subset: str, metric: str = 'squad', split='train',
+def evaluate_remote_dataset(data_id: str, subset: str, metric: str = 'squad', split='train', token=None,
                             question_col: str = 'question', context_col: str = 'retrieved', predict_col: str = 'predicted',
-                            id_col: str = 'question', label_col: str = 'answer', labeling: bool = True):
-  return evaluate_dataset(load_dataset(id, subset)[split], metric=metric, question_col=question_col,
+                            id_col: str = 'question', label_col: str = 'answer', labeling: bool = True,
+                            upload = False):
+  dataset = load_dataset(data_id, subset)[split]
+  score = evaluate_dataset(dataset, metric=metric, question_col=question_col,
                           context_col=context_col, predict_col=predict_col,
                           id_col=id_col, label_col=label_col, labeling=labeling)
+  if upload:
+    def replace_score(row, index):
+      row['score'] = score[index]
+      return row
+    dataset = dataset.map(replace_score, with_indices=True)
+    dataset.push_to_hub(data_id, subset, token=token)
 
 
 def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
@@ -99,8 +109,8 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
     results['sum_fn'] = len(sum_fn) / len(dataset) * 100
     results['ret_em'] = contains_count / len(dataset) * 100
     results['sum_em'] = retains_count / len(dataset) * 100
-  results['exact_match'] = np.mean(
-      [exact_match(row[label_col], row[predict_col]) for row in dataset]) * 100
+  score = [exact_match(row[label_col], row[predict_col]) for row in dataset]
+  results['exact_match'] = np.mean(score) * 100
 
   # Reader
   ctxs: List[str] = dataset['summary'] if dataset['summary'][0] else dataset['retrieved']
@@ -120,8 +130,8 @@ def evaluate_dataset(dataset: Dataset, metric: str = 'squad',
   if 'ret_em' not in results:
     results['ret_em'] = contains_count / len(dataset) * 100
 
-  print(len(dataset))
-  return results
+  print(len(dataset), results)
+  return score
 
 
 def normalize(s: str):

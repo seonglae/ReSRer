@@ -11,7 +11,7 @@ from resrer.eval import evaluate_remote_dataset
 config = dotenv_values(".env")
 
 
-def evaluate(token=config['HF_TOKEN'], dataset='seonglae/nq_open-validation', contain=None, exclude=None):
+def evaluate(token=config['HF_TOKEN'], dataset='seonglae/nq_open-validation', contain=None, exclude=None, upload=False):
   headers = {"Authorization": f"Bearer {token}"}
   url = f"https://datasets-server.huggingface.co/splits?dataset={dataset}"
   response = requests.get(url, headers=headers, timeout=10)
@@ -21,7 +21,7 @@ def evaluate(token=config['HF_TOKEN'], dataset='seonglae/nq_open-validation', co
       continue
     if exclude and str(exclude) in split['config']:
       continue
-    result = evaluate_remote_dataset(dataset, split['config'])
+    result = evaluate_remote_dataset(dataset, split['config'], token=token, upload=upload)
     print(f"{split['config']}: {result}")
   return 'Done'
 

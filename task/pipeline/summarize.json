@@ -1,21 +1,21 @@
 {
   "apps": [
     {
-      "name": "sgpt10.v11",
+      "name": "sgpt10.v13",
       "script": "/root/ReSRer/qa_pipeline.py",
       "args": [
         "dataset",
         "--top_k",
         "10",
         "--batch_size",
-        "2",
+        "1",
         "--reader",
         "gpt-3.5-turbo",
         "--summarize",
         "--summarizer",
-        "gpt-3.5-turbo.v11",
+        "gpt-3.5-turbo.v13",
         "--split",
-        "validation[3200:]"
+        "validation"
       ],
       "wait_ready": false,
       "autorestart": false,

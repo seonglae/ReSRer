@@ -1,16 +1,16 @@
 {
   "apps": [
     {
-      "name": "gpt1",
+      "name": "gpt10",
       "script": "/root/ReSRer/qa_pipeline.py",
       "args": [
         "dataset",
         "--top_k",
-        "1",
+        "10",
         "--batch_size",
         "2",
         "--reader",
-        "gpt-3.5-turbo-1106",
+        "gpt-3.5-turbo",
         "--split",
         "validation"
       ],
