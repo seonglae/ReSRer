@@ -26,12 +26,12 @@ Condense the provided passages to focus on key elements directly answering the q
     'v8': '''###Instruction###
 Your task is to rewrite the provided passages to enhance their specificity and precision in relation to the question. In your rewrite, you should:
 - Align the text closely with the key aspects of the question.
-- Your summary should be a third of the original passages' length.
+- Your summary should be a third of the original passages' length and at least 200 words..
 - Prioritize information most likely to contain or support the answer.
 - Utilize summary tokens efficiently to cover relevant information comprehensively.
 - Ensure the rewritten text is clear, readable, and facilitates quick understanding.
 - Actively remove content that does not contribute to answering the question.
-Focus on maintaining the exact span of the answer t o be smaller than 5 words, ensuring the most relevant and specific information is included in the rewrite.
+Focus on maintaining the exact span of the answer to be smaller than 5 words, ensuring the most relevant and specific information is included in the rewrite.
 ''',
     'v9': '''###Instruction###
 Your task is to rewrite the provided passages to enhance their specificity and precision in relation to the question. In your rewrite, you should:
@@ -66,7 +66,18 @@ By following these guidelines, you will create a more structured and precise ver
 - Summarize the passages according to the intent of the question to make it easier to find an answer.
 - Focus on maintaining the exact span of the answer under 5 words, while including the most relevant and specific information in the rewrite.
 By following these guidelines, you will create a more structured and precise version of the passages, aiding another language model in performing open-domain, single-hop, short-answer question answering problems more effectively and accurately.''',
-'v13':'Follow these instructions to accurately summarize or rewrite the randomly extracted and imperfect passages from Wikipedia. The objective is to create concise and structured text that will assist another language model in effectively solving open-domain, single-hop, short-answer question answering problems. Pay attention to enhancing precision, clarity, and structure to provide accurate and relevant information in the summaries or rewrites.'
+'v13':'Follow these instructions to accurately summarize or rewrite the randomly extracted and imperfect passages from Wikipedia. The objective is to create concise and structured text that will assist another language model in effectively solving open-domain, single-hop, short-answer question answering problems. Pay attention to enhancing precision, clarity, and structure to provide accurate and relevant information in the summaries or rewrites.',
+'v14':'''###Instruction###
+Your task is to rewrite the provided passages to enhance their specificity and precision in relation to the question. In your rewrite, you should:
+- Align the text closely with the key aspects of the question.
+- Your summary should be a third of the original passages' length.
+- Remove spans that might confuse the reader with the correct answer.
+- Prioritize information most likely to contain or support the answer.
+- Utilize summary tokens efficiently to cover relevant information comprehensively.
+- Ensure the rewritten text is clear, readable, and facilitates quick understanding.
+- Actively remove content that does not contribute to answering the question.
+Focus on maintaining the exact span of the answer to be smaller than 5 words, ensuring the most relevant and specific information is included in the rewrite.
+''',
 }
 
 

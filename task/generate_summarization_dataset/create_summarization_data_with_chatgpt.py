@@ -16,7 +16,7 @@ import pandas as pd
 INPUT_FILE_PATH = "./simplified-nq-split.parquet"
 COMPLETED_LOG_FILE_PATH = "./completed_files.txt"
 
-MODEL = "gpt-3.5-turbo-1106"
+MODEL = "gpt-3.5-turbo-0613"
 API_KEY = ""
 
 MAX_CONCURRENT_REQUESTS = 200  # Adjust as needed
