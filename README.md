@@ -1,19 +1,24 @@
 # ReSRer
 
-[![ReSRer Demo](image/image.png)](https://huggingface.co/spaces/seonglae/resrer-demo)
 
 
 # Results
-Trained model for ReSRer reader in Huggingface https://huggingface.co/datasets/seonglae/resrer-nq
+## Models
+Trained model for ReSRer reader in Huggingface
 - [PegasusX](https://huggingface.co/seonglae/resrer-pegasus-x)
 - [Bart](https://huggingface.co/seonglae/resrer-bart-base)
-Training Data generated from GPT-3
-https://huggingface.co/spaces/seonglae/resrer-demo
-Demo in Huggingface Space
-https://huggingface.co/spaces/seonglae/resrer-demo?logs=container
+
+## Others
+- [Training Dataset](https://huggingface.co/datasets/seonglae/resrer-nq) generated from GPT-3
+- [Demo](https://huggingface.co/spaces/seonglae/resrer-demo) in Huggingface Space
+[![ReSRer Demo](image/image.png)](https://huggingface.co/spaces/seonglae/resrer-demo)
+
+
 
 
 ## Score results
+[Total score resulst](https://huggingface.co/datasets/seonglae/nq_open-validation)
+
 ![image](https://github.com/seonglae/ReSRer/assets/27716524/3f518759-8687-4675-becf-c5df1d785651)
 ![image](https://github.com/seonglae/ReSRer/assets/27716524/ba5a6751-1091-498f-9807-ca431cb792d5)
 ![image](https://github.com/seonglae/ReSRer/assets/27716524/82a15456-0cda-4a67-a2de-3ba3c3505fbb)
