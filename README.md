@@ -2,6 +2,14 @@
 
 [![ReSRer Demo](image/image.png)](https://huggingface.co/spaces/seonglae/resrer-demo)
 
+
+# Results
+![image](https://github.com/seonglae/ReSRer/assets/27716524/3f518759-8687-4675-becf-c5df1d785651)
+![image](https://github.com/seonglae/ReSRer/assets/27716524/ba5a6751-1091-498f-9807-ca431cb792d5)
+![image](https://github.com/seonglae/ReSRer/assets/27716524/0b96c6be-8ea7-4d40-b4bd-89f493ec090c)
+
+
+
 ## Get Started
 
 ### 1. Install dependencies
