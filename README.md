@@ -4,6 +4,16 @@
 
 
 # Results
+Trained model for ReSRer reader in Huggingface https://huggingface.co/datasets/seonglae/resrer-nq
+- [PegasusX](https://huggingface.co/seonglae/resrer-pegasus-x)
+- [Bart](https://huggingface.co/seonglae/resrer-bart-base)
+Training Data generated from GPT-3
+https://huggingface.co/spaces/seonglae/resrer-demo
+Demo in Huggingface Space
+https://huggingface.co/spaces/seonglae/resrer-demo?logs=container
+
+
+## Score results
 ![image](https://github.com/seonglae/ReSRer/assets/27716524/3f518759-8687-4675-becf-c5df1d785651)
 ![image](https://github.com/seonglae/ReSRer/assets/27716524/ba5a6751-1091-498f-9807-ca431cb792d5)
 ![image](https://github.com/seonglae/ReSRer/assets/27716524/82a15456-0cda-4a67-a2de-3ba3c3505fbb)
@@ -12,6 +22,7 @@
 
 
 ## Get Started
+
 
 ### 1. Install dependencies
 
