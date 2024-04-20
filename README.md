@@ -1,5 +1,5 @@
-# ReSRer
-Reducing context size and increasing QA score simultaneously
+# ReSRer (Retriever, Summarizer, Reader)
+Reducing context size and increasing QA score simultaneously for ODQA(Open-Domain Question Answering)
 
 
 # Results
@@ -47,8 +47,9 @@ Our main goal was not to train a summarizing small model, but rather to prove th
 
 
 # Contribution
-As I mentioned, our work is focused on exploring how an effective abstractive summarizer could be helpful for QA. We planned to experiment with this summarizing approach. However, at the same time, research groups such as SuRe and LLMLingua made significant advancements in this area, leading us to discontinue our research.
+As I mentioned earlier, our research was aimed at exploring the potential benefits of an effective abstractive summarizer for QA tasks. Initially, we planned to test this approach. However, given the significant advancements made by SuRe and LLMLingua in this domain, we decided to halt our research.
 
+Although our improvements of 4% (which translates to nearly 20% from the original score) may not seem impressive, we demonstrate that a single summarizer module can effectively handle simple tasks such as single-hop question answering, in contrast to more complex multi-step approaches. However, we were unable to confirm whether this single-step context pruning is effective for more intricate tasks like reasoning and code generation. Therefore, there may be room for further contributions in this area in the future.
 
 # Get Started
 
