@@ -1,17 +1,14 @@
 # ReSRer
-
+Reducing context size and increasing QA score simultaneously
 
 
 # Results
-## Models
-Trained model for ReSRer reader in Huggingface
-- [PegasusX](https://huggingface.co/seonglae/resrer-pegasus-x)
-- [Bart](https://huggingface.co/seonglae/resrer-bart-base)
-
-## Others
-- [Training Dataset](https://huggingface.co/datasets/seonglae/resrer-nq) generated from GPT-3
+## Demo on Huggingface Space
 - [Demo](https://huggingface.co/spaces/seonglae/resrer-demo) in Huggingface Space
-[![ReSRer Demo](image/image.png)](https://huggingface.co/spaces/seonglae/resrer-demo)
+
+<a href="https://huggingface.co/spaces/seonglae/resrer-demo">
+  <img style="width: 75%" src="image/image.png" alt="ReSRer Demo" />
+</a>
 
 
 
@@ -19,14 +16,41 @@ Trained model for ReSRer reader in Huggingface
 ## Score results
 [Total score resulst](https://huggingface.co/datasets/seonglae/nq_open-validation)
 
-![image](https://github.com/seonglae/ReSRer/assets/27716524/3f518759-8687-4675-becf-c5df1d785651)
-![image](https://github.com/seonglae/ReSRer/assets/27716524/ba5a6751-1091-498f-9807-ca431cb792d5)
-![image](https://github.com/seonglae/ReSRer/assets/27716524/82a15456-0cda-4a67-a2de-3ba3c3505fbb)
+### Exact Match Increase Along Top-k Increase
+<img style="width: 75%" src="https://github.com/seonglae/ReSRer/assets/27716524/ba5a6751-1091-498f-9807-ca431cb792d5" alt="ReSRer Demo" />
+
+### Exact Match Shrinking Along QA Pipeline
+<img style="width: 75%" src="https://github.com/seonglae/ReSRer/assets/27716524/82a15456-0cda-4a67-a2de-3ba3c3505fbb" alt="ReSRer Demo" />
+
+### Token Count Changes Along Top-k Changing
+<img style="width: 75%" src="https://github.com/seonglae/ReSRer/assets/27716524/3f518759-8687-4675-becf-c5df1d785651" alt="Token count" />
 
 
+# Prompt
+We mainly focused on NQ(Natural Question) dataset for this time.
+
+## Reader prompt for NQ
+```
+Extract a concise noun-based answer from the provided context for the question. Your answer should be under three words and extracted directly from a context of no more than five words. You can analyze the context step by step to derive the answer. Avoid using prefixes that indicate the type of answer; simply present the shortest relevant answer span from the context.
+```
+## Summarizer prompt for NQ
+We did several 
+```
+Condense the provided passages to focus on key elements directly answering the question. Your summary should be a third of the original passages' length and at least 150 words. Highlight critical information and evidence supporting the answer. Avoid generalizations or unrelated details. Ensure the final answer is present in the summary, keeping the exact span of the answer to under five words. Present the summary in a clear, bullet-point format for each key element related to the question. Aim for a balance between conciseness and completeness.
+```
+
+## Models
+Trained model for ReSRer reader on Huggingface trained in [55k Training Dataset](https://huggingface.co/datasets/seonglae/resrer-nq) generated from GPT-3 with the below prompt
+Our main goal was not to train a summarizing small model, but rather to prove that a summarizer module between the retriever and reader is an efficient method. So, we did not delve into training with the most recent summarizer prompt dataset. Therefore, this model's performance is not as good as with the original context (even better than native summarizer though). We disclose this because it might be helpful for people who want to reduce computing costs dramatically.
+- [PegasusX](https://huggingface.co/seonglae/resrer-pegasus-x)
+- [Bart](https://huggingface.co/seonglae/resrer-bart-base)
 
 
-## Get Started
+# Contribution
+As I mentioned, our work is focused on exploring how an effective abstractive summarizer could be helpful for QA. We planned to experiment with this summarizing approach. However, at the same time, research groups such as SuRe and LLMLingua made significant advancements in this area, leading us to discontinue our research.
+
+
+# Get Started
 
 
 ### 1. Install dependencies
