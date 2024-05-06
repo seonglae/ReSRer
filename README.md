@@ -2,6 +2,10 @@
 Reducing context size and increasing QA score simultaneously for ODQA(Open-Domain Question Answering)
 
 
+## Abstract
+Large Language Models (LLMs) demonstrate strong performance in various tasks like Question Answering and Reasoning. However, due to the nature of the Transformer structure, they are limited to considering only a restricted length of context. Despite recent attempts to extend context using techniques like Sparse Attention, there is a lack of research on context shortening. Reducing context while maintaining the same performance can be computationally efficient and particularly effective in removing noise that contained unrelated to query in document retrieved by Retrieval-Augmented Generation (RAG). [Summarization is a task that creates a shorter version of text while preserving its principal information content](https://aclanthology.org/N18-1158/). We proposes a ReSRer architecture, which incorporates a Summarizer model between the traditional Reader-Retriever architecture in an Open-Domain Question Answering system. This approach provides the several Reader and Retriever with improving the overall QA pipeline performance.
+
+
 # Results
 ## Demo on Huggingface Space
 - [Demo](https://huggingface.co/spaces/seonglae/resrer-demo) in Huggingface Space
