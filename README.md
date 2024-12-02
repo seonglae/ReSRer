@@ -1,5 +1,5 @@
 # ReSRer (Retriever, Summarizer, Reader)
-Reducing context size and increasing QA score simultaneously for ODQA(Open-Domain Question Answering)
+Reducing the context text size and increasing QA score simultaneously for ODQA(Open-Domain Question Answering) by raising Information Density
 
 
 ## Abstract
